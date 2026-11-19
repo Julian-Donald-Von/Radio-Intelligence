@@ -24,9 +24,9 @@
 
 | 视频 | 时长 | 大小 | 内容 |
 |---|---|---|---|
-| [▶ 完整版](docs/demo/videos/full-demo-clean.mp4) | 4:52 | 37 MB | 全程演示，已去除录屏标志：情绪可视化、AI 导听、逐句歌词、切歌、纯音乐模式 |
-| [▶ 精华版](docs/demo/videos/highlights.mp4) | 0:52 | 12 MB | 四段精华拼接 |
-| [▶ 短版](docs/demo/videos/short-demo.mp4) | 1:21 | 20 MB | 掐头去尾版 |
+| [▶ 完整版](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/full-demo-clean.mp4) | 4:52 | 37 MB | 全程演示，已去除录屏标志：情绪可视化、AI 导听、逐句歌词、切歌、纯音乐模式 |
+| [▶ 精华版](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/highlights.mp4) | 0:52 | 12 MB | 四段精华拼接 |
+| [▶ 短版](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/short-demo.mp4) | 1:21 | 20 MB | 掐头去尾版 |
 
 > 视频为**视觉无损重编码**（H.265/x265），画质与原始 60 fps / 2560×1440 几乎无差，音轨保留。
 

@@ -24,9 +24,9 @@ Real-time screen recordings, 2560×1440 @ 60 fps. Click through to stream in Git
 
 | Video | Length | Size | Content |
 |---|---|---|---|
-| [▶ Full demo](docs/demo/videos/full-demo-clean.mp4) | 4:52 | 37 MB | Full run, overlay trimmed: mood visuals, AI DJ, synced lyrics, track switching, pure-music mode |
-| [▶ Highlights](docs/demo/videos/highlights.mp4) | 0:52 | 12 MB | Four-song montage |
-| [▶ Short demo](docs/demo/videos/short-demo.mp4) | 1:21 | 20 MB | Trimmed clip |
+| [▶ Full demo](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/full-demo-clean.mp4) | 4:52 | 37 MB | Full run, overlay trimmed: mood visuals, AI DJ, synced lyrics, track switching, pure-music mode |
+| [▶ Highlights](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/highlights.mp4) | 0:52 | 12 MB | Four-song montage |
+| [▶ Short demo](https://github.com/Julian-Donald-Von/Radio-Intelligence/releases/download/v1.0.0/short-demo.mp4) | 1:21 | 20 MB | Trimmed clip |
 
 > Videos are **visually lossless re-encodes** (H.265/x265) — near-identical picture, original 60 fps / 2560×1440 and audio preserved.
 
