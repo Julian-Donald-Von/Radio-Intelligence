@@ -211,14 +211,22 @@ flowchart LR
 
 如果 Radio Intelligence 让你的聆听体验好了一些，欢迎请我喝一杯。谢谢。☕
 
+**微信支付** — 扫码（推荐）：
+
+<p align="center">
+  <img src="docs/demo/wechat-pay-qr.png" alt="微信收款码" width="260"/>
+</p>
+
+**转数快 / FPS** — 扫码付款：
+
 <p align="center">
   <img src="docs/demo/fps-payment-qr.png" alt="FPS 收款码" width="220"/>
-  <br/><i>转数快扫码付款</i>
 </p>
 
 | 方式 | 信息 |
 |---|---|
-| 转数快 / FPS | ID `130236169` · 扫上方二维码 |
+| 微信支付 | 扫上方二维码 |
+| 转数快 / FPS | ID `130236169` |
 | 银行转账 | 香港上海滙豐銀行有限公司 / The Hongkong and Shanghai Banking Corporation Limited (HSBC) · 账户 `090 571969 833` |
 
 ---
