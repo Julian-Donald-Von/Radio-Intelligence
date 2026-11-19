@@ -24,12 +24,12 @@ Real-time screen recordings, 2560×1440 @ 60 fps — click through to stream in 
 
 | 视频 / Video | 时长 / Length | 大小 / Size | 内容 / Content |
 |---|---|---|---|
-| [▶ 完整版 Full demo](docs/demo/videos/full-demo-clean.mp4) | 4:52 | 67 MB | 全程演示，已去除录屏标志：情绪可视化、AI 导听、逐句歌词、切歌、纯音乐模式 / Full run, overlay trimmed: mood visuals, AI DJ, synced lyrics, track switching, pure-music mode |
+| [▶ 完整版 Full demo](docs/demo/videos/full-demo-clean.mp4) | 4:52 | 37 MB | 全程演示，已去除录屏标志：情绪可视化、AI 导听、逐句歌词、切歌、纯音乐模式 / Full run, overlay trimmed: mood visuals, AI DJ, synced lyrics, track switching, pure-music mode |
 | [▶ 精华版 Highlights](docs/demo/videos/highlights.mp4) | 0:52 | 12 MB | 四段精华拼接 / Four-song montage |
 | [▶ 短版 Short demo](docs/demo/videos/short-demo.mp4) | 1:21 | 20 MB | 掐头去尾版 / Trimmed clip |
 
-> 视频为**视觉无损重编码**（H.265/x265, CRF 20），画质与原始 60 fps / 2560×1440 几乎无差，音轨保留。
-> Videos are **visually lossless re-encodes** (H.265/x265, CRF 20) — near-identical picture, original 60 fps / 2560×1440 and audio preserved.
+> 视频为**视觉无损重编码**（H.265/x265），画质与原始 60 fps / 2560×1440 几乎无差，音轨保留。
+> Videos are **visually lossless re-encodes** (H.265/x265) — near-identical picture, original 60 fps / 2560×1440 and audio preserved.
 
 ### 截图 / Screenshots
 
