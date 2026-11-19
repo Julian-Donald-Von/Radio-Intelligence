@@ -222,7 +222,7 @@ Written up as a manuscript **under double-blind review**; to keep it anonymous, 
 
 | 方式 / Method | 信息 / Details |
 |---|---|
-| 银行转账 / Bank transfer | 香港上海汇丰银行 / The Hongkong and Shanghai Banking Corporation (HSBC) · 账户 / Account `090 571969 833` |
+| 银行转账 / Bank transfer | 香港上海滙豐銀行有限公司 / The Hongkong and Shanghai Banking Corporation Limited (HSBC) · 账户 / Account `090 571969 833` |
 | 转数快 / FPS (Faster Payment System) | ID `130236169` |
 
 ---
