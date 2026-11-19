@@ -9,12 +9,12 @@
 [中文](README_zh.md) · **English**
 
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-orange.svg)](https://www.microsoft.com/windows)
 
 </div>
 
-> **Source is visible here; rights are reserved.** The source tree is published for reading and study. All artistic content, code skeleton and algorithms remain **All Rights Reserved** — only the author may distribute or authorise commercial use. See [Repository scope](#repository-scope) and [License](LICENSE.md).
+> **Source is visible here; rights are reserved.** The source tree is made visible for reading and study. All artistic content, code skeleton and algorithms remain **All Rights Reserved** — only the author may distribute or authorise commercial use. See [Repository scope](#repository-scope) and [License](LICENSE.md).
 
 ---
 
@@ -84,8 +84,8 @@ flowchart LR
         D["Radio bridge / event bus"]
     end
     subgraph AI["On-device intelligence"]
-        E["Ollama LLM (DJ)"]
-        F["TTS router (MeloTTS / VOICEVOX / Edge)"]
+        E["llama.cpp LLM (DJ)"]
+        F["Qwen3-TTS 1.7B (local GGUF)"]
         G["CLAP embedding worker"]
         H["Retrieval fan-out"]
     end
@@ -106,18 +106,18 @@ The shell is a Qt (PySide6) host opening the web UI in a QWebEngineView at the l
 
 ### Runtime & deployment
 - One process, local endpoint: FastAPI + Uvicorn @ `127.0.0.1:8765`, REST for commands, WebSocket for state.
-- Local LLM by default (Ollama/Qwen); an OpenAI-compatible endpoint is a config-selected alternative. A global lock serializes generation; prompts are structured for KV-cache hits.
+- Local LLM by default (llama.cpp with Qwen3.6-35B-A3B GGUF). A global lock serializes generation; prompts are structured for KV-cache hits.
 - Measured: one narration ≈ 5 s end-to-end after tuning (from ≈ 23 s) — the win came from batching prefill.
 - VRAM is budgeted: on 8 GB the LLM stays resident while TTS and the embedding worker take fixed fractions; no CUDA → CPU fallback.
 
 ### Speech
-- Inline `<lang>` tags drive routing to MeloTTS (local GPU), VOICEVOX (Japanese) and cloud Edge-TTS fallback.
-- Local speech ≈ 0.07× real time — synthesis is never the reason a transition feels late.
-- Failure falls through to the next engine; if all fail, narration is shown as text rather than blocking playback.
+- One local TTS engine: Qwen3-TTS 1.7B (llama.cpp GGUF), covering ZH/EN/JA.
+- Speech runs locally; synthesis is not the reason a transition feels late.
+- Single engine, no fallback chain — when TTS is unavailable, narration stays silent rather than blocking playback.
 
 ### Music understanding & retrieval
 - 512-d LAION-CLAP embeddings from audio in an **isolated worker process**; half-precision vectors in SQLite, indexed with FAISS `IndexFlatIP` (cosine on normalized vectors).
-- Retrieval fan-out ordered by cost: Bing RSS → DuckDuckGo → MusicBrainz → local `sqlite-vec` corpus, with a 30-day cache and a curation gate (definition-page rate 28% → 17% on the test set).
+- Retrieval fans out concurrently across 360 Search, Sogou and Bing RSS, merged with per-engine weights and a relevance gate; MusicBrainz and a local `sqlite-vec` corpus supplement it, with a 30-day cache.
 - Two recommendation modes over the same index: *continuous* (similarity) and *leap* (deliberate style jump).
 
 ### Frontend
@@ -126,13 +126,13 @@ The shell is a Qt (PySide6) host opening the web UI in a QWebEngineView at the l
 - LRC lyrics with per-line highlight and next-line preview; instrumentals are announced, not forced into empty lyrics.
 
 ### Verification
-- ~170 end-to-end verification scripts (`verify_*.py`) serve as per-round acceptance gates, one as the project-wide regression baseline — run against the real server and a real browser client.
+- Development used extensive end-to-end verification scripts as per-round acceptance gates; these are not distributed with this repository.
 
 ---
 
 ## Emotion recognition
 
-The system reads an emotional trajectory from the audio — not one label per track but a moving read-out over time; **on-device, segment-level, offline**.
+The system reads the emotional character of each track from its audio — **on-device, offline**.
 
 - **It follows the song, not the file** — a track that turns halfway through is read as turning, not averaged into one mood.
 - **It survives a style change** — Chinese pop, Japanese rock, English hip-hop and instrumental score share one read-out; instrumentals handled explicitly.
@@ -155,7 +155,7 @@ When you compare two frozen representations, how much of the "winner" is the rep
 
 **The takeaway we apply to ourselves:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.
 
-This work is a manuscript **under double-blind review**. To keep it anonymous, no title, link, venue or numbers are given here — only the problem and the shape of the finding.
+Only the problem and the shape of the finding are described here — no identifiers or numbers.
 
 ---
 
@@ -166,14 +166,14 @@ This work is a manuscript **under double-blind review**. To keep it anonymous, n
 | App shell | PySide6 (Qt) + QWebEngineView |
 | Backend | FastAPI + Uvicorn, REST + WebSocket, `127.0.0.1:8765` |
 | Frontend | Hand-written HTML/CSS/JS, no framework or build; WebGL/WebGL2 |
-| LLM | Local Ollama (Qwen family); OpenAI-compatible endpoint as alternative |
-| Speech | MeloTTS (local GPU), VOICEVOX (Japanese), Edge TTS (cloud fallback) |
+| LLM | Local llama.cpp (Qwen3.6-35B-A3B GGUF) |
+| Speech | Qwen3-TTS 1.7B (local llama.cpp GGUF, ZH/EN/JA) |
 | Representation | LAION-CLAP, 512-d, 10 s window / 5 s hop |
 | Vector search | FAISS `IndexFlatIP` (cosine), numpy fallback |
 | Storage | SQLite — tracks, segments, embeddings, playlists, history, preferences |
-| Retrieval | Bing RSS / DuckDuckGo / MusicBrainz / local `sqlite-vec` |
+| Retrieval | 360 / Sogou / Bing RSS (weighted merge) + MusicBrainz + local `sqlite-vec` |
 | Audio engine | pygame mixer, two-channel ducking |
-| Python | 3.11+ (developed and tested on 3.13) |
+| Python | 3.13 (bundled by installer) |
 | GPU | Designed for RTX 4060 Laptop 8 GB; CPU-only without CUDA |
 
 ---
@@ -181,7 +181,7 @@ This work is a manuscript **under double-blind review**. To keep it anonymous, n
 ## Repository scope
 
 - **In this repository:** this README, screenshots, three recordings and the poster.
-- **Visible but rights-reserved:** the source tree (readable, not licensed for redistribution or commercial use); the visual layer's rendering model and parameterization; the emotion-recognition model and training protocol. **Not published:** label sources and scores; the manuscript identity.
+- **Visible but rights-reserved:** the source tree (readable, not licensed for redistribution or commercial use); the visual layer's rendering model and parameterization; the emotion-recognition model and training protocol. **Not published:** internal research details.
 - Recordings show the application as it actually ran on the developer's machine.
 
 ---

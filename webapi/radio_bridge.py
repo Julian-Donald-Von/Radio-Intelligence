@@ -2656,7 +2656,7 @@ class RadioBridge:
         """是否存在已登录的在线音源（用于门控歌单/推荐：未登录不加载）。
 
         QQ音乐：config sources.qqmusic.cookie 非空（DPAPI 密文，长度足够判断）。
-        网易云：NEMbox 隔离目录 cookie.txt 含 MUSIC_U 条目。
+        第三方音源插件：隔离目录 cookie.txt 含登录条目（插件由用户自行添加）。
         """
         try:
             from config.settings import user_config

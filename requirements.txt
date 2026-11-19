@@ -1,31 +1,53 @@
 # ============================================================
-# AI 智能电台音乐软件 — 依赖清单
-# 安装目标：D 盘虚拟环境（见 setup/install.ps1）
-# 分组：核心 / GUI / AI脑 / 音频特征(重)
+# Radio Intelligence — Python 依赖（2026-11-19 整理）
+#
+# 一键安装（Python 3.13，推荐；安装器会自动建 3.13 venv）：
+#   python -m pip install -r requirements.txt
+#
+# 说明：
+#   - 版本钉自开发机实测可运行的 venv（Python 3.13），保证可复现。
+#   - LLM 与 TTS 模型不通过 pip 安装，由安装包在安装时按需下载
+#     （llama.cpp GGUF + Qwen3-TTS GGUF），见 README。
+#   - 不含任何第三方音乐平台依赖；音源为本地曲库，第三方音源如需
+#     使用由用户自行以插件形式添加、自担服务条款与版权合规责任。
+#   - torch / laion-clap 体积大，放可选组；不装时相关特征自动降级。
 # ============================================================
 
-# ---- 核心播放与元数据 ----
-pygame>=2.5.2          # 双通道混音 + 音量Ducking
-mutagen>=1.47.0        # 音频元数据读取(歌手/专辑/封面)
-edge-tts>=1.1.10       # 微软在线TTS(默认 zh-CN-XiaoxiaoNeural)
+# ---- Web / API ----
+fastapi==0.141.1
+uvicorn[standard]==0.52.3
+pydantic==2.13.4
+httpx==0.28.1
+requests==2.34.2
+websockets==17.1
+lxml==6.1.1
 
-# ---- GUI ----
-PySide6>=6.7.0         # 主界面
+# ---- GUI / Qt ----
+PySide6==6.11.1
 
-# ---- AI 大脑 / 推荐 ----
-openai>=1.30.0         # 兼容 OpenAI 协议的 LLM API 调用(可接任意兼容端点)
-requests>=2.31.0       # 天气/地点等 HTTP 查询
-pydantic>=2.7.0        # 配置与数据结构校验
-NetEase-MusicBox==0.5.2 # 网易云搜索 / 播放直链（Windows 使用其 Python API）
+# ---- 音频播放与元数据 ----
+pygame==2.6.1
+mutagen==1.48.1
+soundfile==0.14.0
+sounddevice==0.5.6
 
-# ---- 音频特征(较重，可后装) ----
-# 说明：CLAP + FAISS 用于"漫游模式"的音频语义向量检索。
-# faiss-cpu 是"相似漫游"的检索后端，**必装**：已安装时 FeatureIndex.query()
-# 全程走 FAISS（IndexFlatIP.search），不再回退 numpy 暴力检索
-# （见 core/audio_features.py::FeatureIndex）。本机 Python 3.13 用清华镜像
-# 安装 faiss_cpu-1.15.0-cp313 wheel。
-# torch / laion-clap 体积大、需联网，仍可后装；未装时特征自动降级为
-# 基于元数据(流派/节奏/年代)的同维向量，核心功能不受影响。
-faiss-cpu>=1.8.0
-# torch>=2.2.0
-# laion-clap>=1.1.2
+# ---- 数值 / 特征 / ML 运行时 ----
+numpy==2.5.2
+scipy==1.18.0
+librosa==1.0.0
+onnxruntime==1.29.0
+faiss-cpu==1.15.0
+Pillow==12.3.0
+psutil==7.2.2
+rapidfuzz==3.14.5
+transformers==4.45.0
+
+# ---- 本地存储 / 检索 ----
+sqlite-vec==0.1.9
+qrcode==8.2
+
+# ---- 可选（体积大，需要时取消注释）----
+# torch==2.6.0            # CPU 版：--index-url https://download.pytorch.org/whl/cpu
+#                        # CUDA 12.4 版：--index-url https://download.pytorch.org/whl/cu124
+# laion-clap==1.1.7
+# edge-tts==7.2.8         # 历史云端 TTS，当前默认 Qwen3-TTS 不需要

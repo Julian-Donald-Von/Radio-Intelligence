@@ -9,7 +9,7 @@
 **中文** · [English](README.md)
 
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-orange.svg)](https://www.microsoft.com/windows)
 
 </div>
@@ -84,8 +84,8 @@ flowchart LR
         D["电台桥接 / 事件总线"]
     end
     subgraph AI["本地智能"]
-        E["Ollama LLM（DJ）"]
-        F["TTS 路由（MeloTTS / VOICEVOX / Edge）"]
+        E["llama.cpp LLM（DJ）"]
+        F["Qwen3-TTS 1.7B（本地 GGUF）"]
         G["CLAP 嵌入 worker"]
         H["检索扇出"]
     end
@@ -106,18 +106,18 @@ flowchart LR
 
 ### 运行与部署
 - 单进程本地端点：FastAPI + Uvicorn @ `127.0.0.1:8765`，REST 下命令、WebSocket 推状态。
-- 默认本地 LLM：Ollama 承载 Qwen 系列；OpenAI 兼容端点作为可配置备选。全局锁串行化生成，提示词结构化以命中 KV cache。
+- 默认本地 LLM：llama.cpp 承载 Qwen3.6-35B-A3B GGUF。全局锁串行化生成，提示词结构化以命中 KV cache。
 - 实测：调优后单段旁白端到端 ≈ 5 秒（原 ≈ 23 秒），收益来自 batching prefill。
 - 显存是预算出来的：8 GB 卡上 LLM 常驻，TTS 与 embedding worker 占固定份额；无 CUDA 则全部回落 CPU。
 
 ### 语音
-- 语言标签驱动路由：LLM 输出带 `<lang>` 标签，分段器归一化后分派到 MeloTTS（本地 GPU）、VOICEVOX（日语）、Edge-TTS（云兜底）。
-- 本地语音 ≈ 0.07× 实时（一分钟语音约 4 秒合成）。
-- 失败优雅：引擎缺失或调用失败则顺延；全失败则以文字显示旁白，不阻塞播放。
+- 单一本地语音引擎：Qwen3-TTS 1.7B（llama.cpp GGUF），覆盖中/英/日。
+- 语音在本地合成，不依赖云端。
+- 单引擎、无回退链：不可用时静音，不阻塞播放。
 
 ### 音乐理解与检索
 - 从音频取 512 维 LAION-CLAP 嵌入，在**独立 worker 进程**计算；半精度向量存 SQLite，FAISS `IndexFlatIP` 建索引。
-- 检索扇出按成本排序：Bing RSS → DuckDuckGo → MusicBrainz → 本地 `sqlite-vec` 语料，带 30 天缓存与策划闸（测试集定义页率 28%→17%）。
+- 检索并发扇出：360 搜索、搜狗、Bing RSS 三路并发，按引擎权重与相关度闸合并；MusicBrainz 与本地 `sqlite-vec` 语料作补充，带 30 天缓存。
 - 同一索引上两种推荐模式：*continuous*（相似）与 *leap*（刻意跳跃风格）。
 
 ### 前端
@@ -126,13 +126,13 @@ flowchart LR
 - 歌词 LRC 解析、逐行高亮、下一行预览；纯音乐被识别后播报而非强塞空歌词。
 
 ### 验证
-- 约 170 个端到端验证脚本（`verify_*.py`）作为逐轮验收门，其中一个为全项目回归基线；它们打真实服务与真实浏览器客户端。
+- 开发期使用大量端到端验证脚本作为逐轮验收门；这些脚本未随本仓库分发。
 
 ---
 
 ## 情绪识别
 
-系统从所播音频读取一条情绪轨迹——不是每首一个标签，而是随音乐时间推进的动态读数；**本地、段级、离线**。
+系统从所播音频读取每首歌的情绪特征——**本地、离线**。
 
 - **跟歌走，不跟文件走**：歌曲中途转折就被读成转折，而非平均成单一心情。
 - **扛得住风格切换**：中文流行、日文摇滚、英文嘻哈、纯音乐配乐共用一套读数；纯音乐显式处理。
@@ -155,7 +155,7 @@ flowchart LR
 
 **我们据此约束自己**：永远不要在单一系数、单一求解器上选表征或宣称更优；要报告全貌，至少报告范围。
 
-该工作已成文，**目前处于双盲评审**。为保持匿名，此处**不提供标题、链接、会议与数字**——只有问题与发现的形状。
+此处仅描述问题与发现的形状，不提供标识或数字。
 
 ---
 
@@ -166,14 +166,14 @@ flowchart LR
 | 外壳 | PySide6 (Qt) + QWebEngineView |
 | 后端 | FastAPI + Uvicorn, REST + WebSocket, `127.0.0.1:8765` |
 | 前端 | 手写 HTML/CSS/JS，无框架无构建；WebGL/WebGL2 |
-| LLM | 本地 Ollama（Qwen 系列）；OpenAI 兼容端点备选 |
-| 语音 | MeloTTS（本地 GPU）、VOICEVOX（日语）、Edge TTS（云兜底） |
+| LLM | 本地 llama.cpp（Qwen3.6-35B-A3B GGUF） |
+| 语音 | Qwen3-TTS 1.7B（本地 llama.cpp GGUF，中/英/日） |
 | 音乐表征 | LAION-CLAP, 512 维, 10 秒窗 / 5 秒 hop |
 | 向量检索 | FAISS `IndexFlatIP`（余弦），numpy 兜底 |
 | 存储 | SQLite — tracks, segments, embeddings, playlists, history, preferences |
-| 检索 | Bing RSS / DuckDuckGo / MusicBrainz / 本地 `sqlite-vec` |
+| 检索 | 360 / 搜狗 / Bing RSS（加权合并）+ MusicBrainz / 本地 `sqlite-vec` |
 | 音频 | pygame mixer，双通道 ducking |
-| Python | 3.11+（开发测试于 3.13） |
+| Python | 3.13（安装器自带） |
 | GPU | 面向 RTX 4060 Laptop 8 GB；无 CUDA 则纯 CPU |
 
 ---
@@ -181,7 +181,7 @@ flowchart LR
 ## 仓库范围
 
 - **本仓库**：本 README、截图、三段录屏、海报。
-- **可见但权利保留**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不公开**：标签来源与分数；在审论文身份。
+- **可见但权利保留**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不公开**：内部研究细节。
 - 录屏展示的是应用在开发机上的实际运行。
 
 ---

@@ -7,13 +7,13 @@
 **会读懂心情的本地智能电台 / A local-first AI radio that reads how the music feels.**
 
 [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-orange.svg)](https://www.microsoft.com/windows)
 
 </div>
 
 > **源码可见，权利保留。** 本仓库公开源码供阅读与研究；美术、代码骨架与算法一律 **All Rights Reserved**，仅作者可分发或授权商业使用。详见 [仓库范围](#仓库范围--repository-scope) 与 [授权声明](LICENSE.md)。
-> **Source is visible here; rights are reserved.** The source tree is published for reading and study. All artistic content, code skeleton and algorithms remain **All Rights Reserved** — only the author may distribute or authorise commercial use. See [Repository scope](#仓库范围--repository-scope) and [License](LICENSE.md).
+> **Source is visible here; rights are reserved.** The source tree is made visible for reading and study. All artistic content, code skeleton and algorithms remain **All Rights Reserved** — only the author may distribute or authorise commercial use. See [Repository scope](#仓库范围--repository-scope) and [License](LICENSE.md).
 
 ---
 
@@ -91,8 +91,8 @@ flowchart LR
         D["Radio bridge / event bus"]
     end
     subgraph AI["On-device intelligence"]
-        E["Ollama LLM (DJ)"]
-        F["TTS router (MeloTTS / VOICEVOX / Edge)"]
+        E["llama.cpp LLM (DJ)"]
+        F["Qwen3-TTS 1.7B (local GGUF)"]
         G["CLAP embedding worker"]
         H["Retrieval fan-out"]
     end
@@ -114,18 +114,18 @@ The shell is a Qt (PySide6) host opening the web UI in a QWebEngineView at the l
 
 ### 运行与部署 / Runtime & deployment
 - 单进程本地端点：FastAPI + Uvicorn @ `127.0.0.1:8765`，REST 下命令、WebSocket 推状态。/ One process, local endpoint: REST for commands, WebSocket for state.
-- 默认本地 LLM：Ollama 承载 Qwen 系列；OpenAI 兼容端点作为可配置备选。全局锁串行化生成，提示词结构化以命中 KV cache。/ Local LLM by default (Ollama/Qwen); OpenAI-compatible endpoint as config-selected alternative.
+- 默认本地 LLM：llama.cpp 承载 Qwen3.6-35B-A3B GGUF。全局锁串行化生成，提示词结构化以命中 KV cache。/ Local LLM by default (llama.cpp with Qwen3.6-35B-A3B GGUF).
 - 实测：调优后单段旁白端到端 ≈ 5 s（原 ≈ 23 s），收益来自 batching prefill。/ Measured: one narration ≈ 5 s end-to-end (from ≈ 23 s), the win came from batching prefill.
 - 显存是预算出来的：8 GB 卡上 LLM 常驻，TTS 与 embedding worker 占固定份额；无 CUDA 则全部回落 CPU。/ VRAM is budgeted: on 8 GB the LLM stays resident while TTS and the embedding worker take fixed fractions; no CUDA → CPU fallback.
 
 ### 语音 / Speech
-- 语言标签驱动路由：LLM 输出带 `<lang>` 标签，分段器归一化后分派到 MeloTTS（本地/GPU）、VOICEVOX（日语）、Edge-TTS（云兜底）。/ Inline `<lang>` tags drive routing to MeloTTS (local GPU), VOICEVOX (Japanese) and cloud Edge-TTS fallback.
-- 本地语音 ≈ 0.07× 实时（一分钟语音约 4 秒合成）。/ Local speech ≈ 0.07× real time — synthesis is never the reason a transition feels late.
-- 失败优雅：引擎缺失或调用失败则顺延；全失败则以文字显示旁白，不阻塞播放。/ Failure falls through; if all fail, narration is shown as text rather than blocking playback.
+- 单一本地语音引擎：Qwen3-TTS 1.7B（llama.cpp GGUF），覆盖中/英/日。/ One local TTS engine: Qwen3-TTS 1.7B (llama.cpp GGUF), ZH/EN/JA.
+- 语音在本地合成，不依赖云端。/ Speech runs locally, no cloud dependency.
+- 单引擎无回退链：不可用时静音，不阻塞播放。/ Single engine, no fallback — silent rather than blocking when unavailable.
 
 ### 音乐理解与检索 / Music understanding & retrieval
 - 从音频而非标签取 embedding：LAION-CLAP 512 维、10 s 窗 / 5 s hop，在**独立 worker 进程**计算；向量半精度存 SQLite，FAISS `IndexFlatIP` 建索引。/ 512-d LAION-CLAP from audio in an isolated worker; half-precision vectors in SQLite, indexed with FAISS `IndexFlatIP`.
-- 检索扇出按成本排序：Bing RSS → DuckDuckGo → MusicBrainz → 本地 `sqlite-vec` 语料，带 30 天缓存；策划闸剔除定义页与样板文字（测试集定义页率 28%→17%）。/ Retrieval fan-out ordered by cost with a curation gate (definition-page rate 28%→17% on the test set).
+- 检索并发扇出：360 搜索、搜狗、Bing RSS 三路并发，按权重与相关度闸合并；MusicBrainz 与本地语料作补充，带 30 天缓存。/ Retrieval fans out concurrently across 360/Sogou/Bing RSS with weighted merge.
 
 ### 前端 / Frontend
 - 无框架、无构建步骤：手写 HTML/CSS/JS 拆成约 10 个模块。/ No framework, no build step: hand-written HTML/CSS/JS in ~10 modules.
@@ -133,14 +133,14 @@ The shell is a Qt (PySide6) host opening the web UI in a QWebEngineView at the l
 - 歌词 LRC 解析、逐行高亮、下一行预览；纯音乐被识别后播报而非强塞空歌词。/ LRC lyrics with per-line highlight and next-line preview; instrumentals are announced, not forced into empty lyrics.
 
 ### 验证 / Verification
-- 约 170 个端到端验证脚本（`verify_*.py`）作为逐轮验收门，其中一个为全项目回归基线；它们打真实服务与真实浏览器客户端。/ ~170 end-to-end verification scripts as per-round gates, one serving as the project-wide regression baseline — run against the real server and a real browser client.
+- 开发期使用大量端到端验证脚本作为逐轮验收门，未随本仓库分发。/ Development used extensive verification scripts as acceptance gates; not distributed here.
 
 ---
 
 ## 情绪识别 / Emotion recognition
 
-系统从所播音频读取一条情绪轨迹——不是每首一个标签，而是随音乐时间推进的动态读数；**本地、段级、离线**，不联网、不调云。
-The system reads an emotional trajectory from the audio — not one label per track but a moving read-out over time; **on-device, segment-level, offline**.
+系统从所播音频读取每首歌的情绪特征——**本地、离线**，不联网、不调云。
+The system reads the emotional character of each track from its audio — **on-device, offline**.
 
 - **跟歌走，不跟文件走**：歌曲中途转折就被读成转折，而非平均成单一心情。/ It follows the song, not the file.
 - **扛得住风格切换**：中文流行、日文摇滚、英文嘻哈、纯音乐配乐共用一套读数；纯音乐显式处理。/ It survives a style change; instrumentals handled explicitly.
@@ -148,7 +148,7 @@ The system reads an emotional trajectory from the audio — not one label per tr
 - **在广播窗口内出结果**：段级推理只给流水线增加毫秒级开销，可见延迟由语音合成与本地 LLM 主导。/ It answers inside the broadcast window.
 - **与一切共存**：整条识别路径跑在 8 GB 上常驻 LLM 之外的剩余显存里。/ It fits in the memory left beside a resident LLM on an 8 GB card.
 
-其研究纲领瞄准一个明确的最前沿轴心：**可部署预算下的识别质量**——在真正能跑在 8 GB 消费卡、与 live LLM 共存的模型里做到最好。具体数字不在此复现，它们属于配套论文；模型、训练协议、标签来源与分数均不在本仓库范围。
+其研究纲领瞄准一个明确的最前沿轴心：**可部署预算下的识别质量**——在真正能跑在 8 GB 消费卡、与 live LLM 共存的模型里做到最好。具体数字不在此复现；模型、训练协议、标签来源与分数均不在本仓库范围。
 The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. Reported numbers are not reproduced here; the model, protocol, labels and scores are outside this repository's scope.
 
 ---
@@ -166,8 +166,8 @@ When you compare two frozen representations, how much of the "winner" is the rep
 **我们据此约束自己**：永远不要在单一系数、单一求解器上选表征或宣称更优；要报告全貌，至少报告范围。
 **The takeaway:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.
 
-该工作已成文，**目前处于双盲评审**。为保持匿名，此处**不提供标题、链接、会议与数字**——只有问题与发现的形状。
-Written up as a manuscript **under double-blind review**; to keep it anonymous, no title/link/venue/numbers here — only the problem and the shape of the finding.
+此处仅描述问题与发现的形状，不提供标识或数字。
+Only the problem and the shape of the finding are described here — no identifiers or numbers.
 
 ---
 
@@ -178,14 +178,14 @@ Written up as a manuscript **under double-blind review**; to keep it anonymous, 
 | 外壳 / App shell | PySide6 (Qt) + QWebEngineView |
 | 后端 / Backend | FastAPI + Uvicorn, REST + WebSocket, `127.0.0.1:8765` |
 | 前端 / Frontend | 手写 HTML/CSS/JS，无框架无构建；WebGL/WebGL2 |
-| LLM | 本地 Ollama（Qwen 系列）；OpenAI 兼容端点备选 |
-| 语音 / Speech | MeloTTS（本地 GPU）、VOICEVOX（日语）、Edge TTS（云兜底） |
+| LLM | 本地 llama.cpp（Qwen3.6-35B-A3B GGUF） |
+| 语音 / Speech | Qwen3-TTS 1.7B（本地 llama.cpp GGUF，中/英/日） |
 | 音乐表征 / Representation | LAION-CLAP, 512-d, 10 s 窗 / 5 s hop |
 | 向量检索 / Vector search | FAISS `IndexFlatIP`（余弦），numpy 兜底 |
 | 存储 / Storage | SQLite — tracks, segments, embeddings, playlists, history, preferences |
-| 检索 / Retrieval | Bing RSS / DuckDuckGo / MusicBrainz / 本地 `sqlite-vec` |
+| 检索 / Retrieval | 360 / 搜狗 / Bing RSS（加权合并）+ MusicBrainz / 本地 `sqlite-vec` |
 | 音频 / Audio engine | pygame mixer，双通道 ducking |
-| Python | 3.11+（开发测试于 3.13） |
+| Python | 3.13（安装器自带） |
 | GPU | 面向 RTX 4060 Laptop 8 GB；无 CUDA 则纯 CPU |
 
 ---
@@ -193,7 +193,7 @@ Written up as a manuscript **under double-blind review**; to keep it anonymous, 
 ## 仓库范围 / Repository scope
 
 - **本仓库 / In this repo**：本 README、截图、三段录屏、海报。/ This README, screenshots, three recordings, the poster.
-- **可见但权利保留 / Visible, rights-reserved**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不公开**：标签来源与分数；在审论文身份。/ Source (readable, no redistribution/commercial licence); visual model; emotion model & protocol. **Not published**: label sources, scores, manuscript identity.
+- **可见但权利保留 / Visible, rights-reserved**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不公开**：内部研究细节。/ Source (readable, no redistribution/commercial licence); visual model; emotion model & protocol. **Not published**: internal research details.
 - 录屏展示的是应用在开发机上的实际运行。/ Recordings show the app as it actually ran on the developer's machine.
 
 ---

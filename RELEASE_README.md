@@ -7,8 +7,8 @@
   - `sources/` — 音源后端：local（第三方音源以插件形式由用户自行添加）
   - `frontend/` — 第三方音源前端片段（用户自行添加）
   - `tts/`, `skins/`, `ui/` — 其它插件槽
-- `models/` — 可用模型（启动时扫描）：Qwen3-TTS / CLAP / LLM(35B)
-- `venv/` — 运行环境；`start_radio.bat` 为入口
+- `models/` — 模型目录（安装器按需联网下载 Qwen3-TTS / CLAP / LLM，不随包预置）
+- `venv/` — 安装时创建；`start_radio.bat` 为入口
 
 ## 已排除
 - 全部 `verify_*` / `probe_*` / `_*` 研究脚本、测试、训练、论文、数据集
