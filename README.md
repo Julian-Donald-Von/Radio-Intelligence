@@ -211,14 +211,22 @@ This notice covers all rights the author holds under applicable law in the **vis
 
 If Radio Intelligence made your listening a little better, you can buy me a drink. Thank you. ☕
 
+**WeChat Pay / 微信支付** — scan the QR below (recommended):
+
+<p align="center">
+  <img src="docs/demo/wechat-pay-qr.png" alt="WeChat Pay QR" width="260"/>
+</p>
+
+**FPS / 转数快** — scan to pay:
+
 <p align="center">
   <img src="docs/demo/fps-payment-qr.png" alt="FPS payment QR" width="220"/>
-  <br/><i>Scan to pay via FPS</i>
 </p>
 
 | Method | Details |
 |---|---|
-| FPS (Faster Payment System) | ID `130236169` · scan the QR above |
+| WeChat Pay | QR above · 微信扫码 |
+| FPS (Faster Payment System) | ID `130236169` |
 | Bank transfer | The Hongkong and Shanghai Banking Corporation Limited (HSBC) · Account `090 571969 833` |
 
 ---
