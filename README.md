@@ -200,30 +200,42 @@ Written up as a manuscript **under double-blind review**; to keep it anonymous, 
 
 ## 授权 / License
 
+### 文档与说明 / Documentation
+**EN** — The written documentation in this repository is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/): you may share and view it, with attribution, for **non-commercial** purposes; you may **not** distribute modified versions.
+**中文** — 本仓库的文字文档采用 [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) 协议：署名前提下可出于**非商业**目的分享与浏览；**不得**分发修改版本。
+
+### 美术与创作内容 / Artistic & creative content
+
 <div align="center">
-<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/"><img src="https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png" alt="CC BY-NC-ND 4.0"/></a>
+<b>© 2026 Mr. Unpunctual. All rights reserved. / © 2026 不准点先生。保留全部权利。</b>
 </div>
 
-**EN** — This project is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/): you may share and view it, with attribution, for **non-commercial** purposes; you may **not** distribute modified versions.
+This notice covers all rights the author holds under applicable law in the **visual and artistic features and creative assets** of this project — including but not limited to the liquid water body, global refraction, liquid-glass lens, poster canvas, breathing core, ripple / wavefront rendering, palettes, the RI logo, the poster, cover artwork, screenshots, generated visual assets, and any artistic or design features. This is a worldwide **all-rights-reserved** declaration, **not limited to this repository**; it applies wherever these works appear.
 
-> ⚠️ **Artistic effects — all rights reserved.** The visual/artistic effects — including the liquid water body, global refraction, liquid-glass lens, poster canvas, breathing core, ripple/wavefront rendering, color palettes, the RI logo and all generated visual assets — are **excluded from this license**. All rights are fully reserved by the author; no license to use, copy, modify or redistribute them, in whole or in part, is granted.
+本声明适用于作者在适用法律下就本项目**美术与艺术特征及创作资产**享有的全部权利——包括但不限于水体、全局折射、液态玻璃透镜、海报画布、呼吸核、涟漪/波前渲染、配色、RI 标志、海报、封面、截图、生成视觉资产，以及任何艺术或设计特征。这是一项全球性的 **all rights reserved（保留全部权利）** 声明，**不限于本仓库**，无论这些作品出现在何处均适用。
 
-**中文** — 本项目采用 [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) 协议：署名前提下可出于**非商业**目的分享与浏览；**不得**分发修改版本。
-
-> ⚠️ **艺术效果 · 权利完全保留。** 视觉/艺术效果——水体、全局折射、液态玻璃透镜、海报画布、呼吸核、涟漪/波前渲染、配色、RI 标志及全部生成视觉资产——**不在上述协议授权范围内**，全部权利由作者完全保留，不授予任何使用、复制、修改或再分发许可。
+- Public display, access or the technical ability to download does **not** constitute an open licence or permission for commercial use. / 公开展示、能够访问或能够下载，**不构成**开放许可或商业使用授权。
+- No commercial use — including paid distribution, publication, advertising, merchandise or commercial adaptation — is permitted without the author's prior **written** permission. / 未经作者事先**书面**许可，不得用于任何商业用途（付费传播、出版、广告、商品化或商业性改编）。
+- Republication, copying, redistribution, further translation, adaptation and derivative works likewise require written permission; attribution or a stated noncommercial purpose alone grants nothing. / 转载、复制分发、再翻译、改编及衍生作品同样须书面许可；仅标注作者或声明非商业目的不授予任何许可。
+- A licence for the documentation or website code does **not** automatically cover this creative content. Statutory exceptions (fair use / fair dealing) and rights necessarily provided by the hosting platform remain unaffected. / 文档或网页代码的任何许可都**不**自动适用于上述创作内容；法定合理使用及托管平台条款必须提供的权限不受影响。
+- No rights are assigned or transferred by this notice. For any permission, obtain written consent from the author. / 本声明不转让任何权利；任何授权事宜均须取得作者书面许可。
 
 ---
 
 ## 请我喝一杯 / Buy me a drink
 
 **EN** — If Radio Intelligence made your listening a little better, you can buy me a drink. Thank you. ☕
-
 **中文** — 如果 Radio Intelligence 让你的聆听体验好了一些，欢迎请我喝一杯。谢谢。☕
+
+<p align="center">
+  <img src="docs/demo/fps-payment-qr.png" alt="FPS payment QR" width="220"/>
+  <br/><i>转数快收款码 / Scan to pay via FPS</i>
+</p>
 
 | 方式 / Method | 信息 / Details |
 |---|---|
+| 转数快 / FPS (Faster Payment System) | ID `130236169` · 扫上方二维码 / scan the QR above |
 | 银行转账 / Bank transfer | 香港上海滙豐銀行有限公司 / The Hongkong and Shanghai Banking Corporation Limited (HSBC) · 账户 / Account `090 571969 833` |
-| 转数快 / FPS (Faster Payment System) | ID `130236169` |
 
 ---
 
