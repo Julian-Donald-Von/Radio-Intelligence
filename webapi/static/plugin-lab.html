@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>插件实验室 · 可注册特效接口</title>
+<style>
+  :root{
+    --bg:#0e0e12; --card:#18181f; --card2:#1f1f29; --line:#2a2a35;
+    --ink:#ececf2; --sub:#9a9aa8; --hint:#6a6a78;
+    --accent:#a99bff; --ok:#5DCAA5; --bad:#F09595; --warn:#EF9F27;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:13px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 28px 60px}
+  h1{font-size:18px;font-weight:500;margin:0 0 4px}
+  h2{font-size:14px;font-weight:500;margin:0 0 12px;color:var(--sub)}
+  .lead{color:var(--sub);margin:0 0 18px}
+  .banner{background:var(--card2);border:1px solid var(--line);border-radius:12px;
+          padding:12px 16px;color:var(--sub);margin-bottom:20px}
+  .banner b{color:var(--ok);font-weight:500}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{font:inherit;color:var(--ink);background:var(--card2);border:1px solid var(--line);
+         border-radius:8px;padding:7px 12px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.p{background:var(--accent);color:#17121f;border-color:var(--accent)}
+  button.ok{color:var(--ok);border-color:var(--ok)}
+  button.bad{color:var(--bad);border-color:var(--bad)}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
+        border:1px solid var(--line);color:var(--sub);margin-right:6px}
+  .chip.s-discovered{color:var(--warn);border-color:var(--warn)}
+  .chip.s-loaded{color:var(--accent);border-color:var(--accent)}
+  .chip.s-activated{color:var(--ok);border-color:var(--ok)}
+  .chip.s-deactivated,.chip.s-broken{color:var(--bad);border-color:var(--bad)}
+  .plug{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--card2)}
+  .plug h3{margin:0 0 6px;font-size:14px;font-weight:500}
+  .meta{color:var(--sub);font-size:12px;margin-bottom:10px}
+  .meta code{color:var(--accent);font-family:ui-monospace,monospace}
+  .acts{display:flex;gap:8px}
+  .empty{color:var(--hint);padding:20px 0;text-align:center}
+  pre{background:#101017;border:1px solid var(--line);border-radius:10px;padding:12px;
+      color:var(--sub);font:12px/1.55 ui-monospace,monospace;white-space:pre-wrap;
+      max-height:280px;overflow:auto}
+  .gate-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .verdict{font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line)}
+  .verdict.v-ok{color:var(--ok);border-color:var(--ok)}
+  .verdict.v-bad{color:var(--bad);border-color:var(--bad)}
+  .note{color:var(--hint);font-size:12px;margin-top:10px}
+  .stage{position:relative;min-height:120px;border:1px dashed var(--line);border-radius:12px;
+         margin-top:12px;padding:14px;color:var(--sub);overflow:hidden}
+  .stage b{color:var(--accent);font-weight:500}
+  footer{margin-top:22px;color:var(--hint);font-size:12px;line-height:1.8}
+  @keyframes artRippleInk{
+    from{transform:scale(.2);opacity:.95}
+    to{transform:scale(4.5);opacity:0}
+  }
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<h1>插件实验室 · 可注册特效接口</h1>
+<p class="lead">把「扫描注册表 → 发现 → 加载 → 启用 → 落到 UI → 禁用」做成可点击的闭环。数据来自真实文件，不是演示假数据。</p>
+
+<div class="banner">
+  <b>本地插件第一版</b>：插件放进 <code>plugins/art-effects/&lt;id&gt;/</code>（manifest.json + plugin.js），点扫描即从磁盘发现，无需改代码。
+  后端只读 manifest、不执行插件；前端经 <code>ui-art-gate.js</code> 门禁后由 <code>ui-art-host.js</code> 加载。<code>source=github</code> 为市场预留位，本版不实现。
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <h2>本地插件 <span id="hostState" class="chip">扫描中…</span></h2>
+    <div class="bar">
+      <button id="scan" class="p">扫描 plugins/art-effects/</button>
+      <button id="emit">发射一次节拍（看落点）</button>
+      <span id="regInfo" style="color:var(--hint)"></span>
+    </div>
+    <div id="list"><div class="empty">点「扫描」发现本地插件</div></div>
+    <div class="stage" id="stage">
+      落点舞台：插件 <b>mount(ctx)</b> 后往 <code>document.body</code> 插入效果层（z-index:4）。
+      启用后点「发射一次节拍」，应看到墨点涟漪在此页扩散——这就是插件进入 UI 的实际位置。
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>门禁与诊断台</h2>
+    <div class="gate-row">
+      <button id="gOk" class="ok">合法 manifest → 应通过</button>
+      <button id="gWater" class="bad">water 槽 → 应被拒</button>
+    </div>
+    <div class="gate-row">
+      <button id="sOk" class="ok">合法源码 → 应通过</button>
+      <button id="sBad" class="bad">碰 __water 的源码 → 应被拒</button>
+    </div>
+    <div id="verdicts" style="margin:12px 0"></div>
+    <h2 style="margin-top:18px">宿主诊断 probe()</h2>
+    <pre id="probe">等待扫描…</pre>
+    <p class="note">门禁红绿断言：先让违规样本见红，再让合法样本见绿；两者都符合预期才算这套门禁可靠。</p>
+  </section>
+</div>
+
+<footer>
+  白名单可注册槽：<span id="slotsOk"></span><br>
+  冻结禁止槽：<span id="slotsNo"></span><br>
+  状态机：discovered → loaded（hydrate）→ activated（enable）→ deactivated（disable）；verify 失败落 broken。
+</footer>
+
+<script src="/ui-art-gate.js"></script>
+<script src="/ui-art-bus.js"></script>
+<script src="/ui-art-host.js"></script>
+<script>
+(function(){
+  'use strict';
+  var gate=window.ArtGate, bus=window.ArtBus, host=window.ArtHost;
+  var $={
+    list:document.getElementById('list'),probe:document.getElementById('probe'),
+    info:document.getElementById('regInfo'),hs:document.getElementById('hostState'),
+    v:document.getElementById('verdicts')
+  };
+  var localIndex={plugins:[],rejected:[]};   // 最近一次扫描结果
+  var srcCache={};                            // dir -> {manifest, source}
+
+  function chip(state){return '<span class="chip s-'+state+'">'+state+'</span>';}
+  function verdict(label,res,wantOk){
+    var good=(res.ok===wantOk);
+    var cls=good?'v-ok':'v-bad';
+    var head=good?'符合预期':'不符预期';
+    return '<div class="verdict '+cls+'">'+head+' · '+label+' → '+res.code+'：'+res.reason+'</div>';
+  }
+  function appendVerdict(label,res,wantOk){
+    $.v.insertAdjacentHTML('afterbegin',verdict(label,res,wantOk));
+  }
+  function esc(s){return String(s==null?'':s).replace(/[<>&]/g,function(c){
+    return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];});}
+
+  // 扫描本地文件夹：后端只读 manifest，返回清单（不执行代码）
+  function scanLocal(){
+    return fetch('/api/plugins/local',{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('scan HTTP '+r.status); return r.json(); })
+      .then(function(data){
+        localIndex=data;
+        return data;
+      });
+  }
+
+  // 取某个插件的入口源码（后端限制：仅清单内目录放行）
+  function fetchSource(dir){
+    if(srcCache[dir]) return Promise.resolve(srcCache[dir]);
+    return fetch('/api/plugins/local/source?dir='+encodeURIComponent(dir),{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('source HTTP '+r.status); return r.json(); })
+      .then(function(d){ srcCache[dir]=d; return d; });
+  }
+
+  // 渲染：合并"本地扫描清单"与"宿主运行时状态"
+  function render(){
+    var runtime={};
+    host.list().forEach(function(p){runtime[p.id]=p;});
+    var items=localIndex.plugins.map(function(p){
+      var rt=runtime[p.id];
+      var state=rt?rt.state:'discovered';
+      var srcTag=p.source==='github'?'<span class="chip">github 预留</span>':'<span class="chip">'+(p.source||'local')+'</span>';
+      var b;
+      if(state==='activated') b='<button data-act="off" data-id="'+esc(p.id)+'" data-dir="'+esc(p.dir)+'" class="bad">禁用</button>';
+      else b='<button data-act="on" data-id="'+esc(p.id)+'" data-dir="'+esc(p.dir)+'" class="p">'+
+             (state==='discovered'?'加载并启用':'启用')+'</button>';
+      return '<div class="plug"><h3>'+esc(p.name)+' <code style="color:var(--hint);font-size:11px">'+esc(p.id)+'</code> '+
+             chip(state)+' '+srcTag+'</h3>'+
+        '<div class="meta">slot=<code>'+esc(p.slot)+'</code> · v'+esc(p.version)+
+        ' · execution=<code>'+esc(p.execution)+'</code> · dir=<code>'+esc(p.dir)+'</code></div>'+
+        '<div class="acts">'+b+'</div></div>';
+    });
+    $.info.textContent='发现 '+localIndex.plugins.length+' 个插件'+
+      (localIndex.rejected&&localIndex.rejected.length?'（拒绝 '+localIndex.rejected.length+'）':'');
+    $.list.innerHTML=items.length?items.join(''):
+      '<div class="empty">未发现插件。把插件目录放进 plugins/art-effects/ 后点扫描</div>';
+    if(localIndex.rejected&&localIndex.rejected.length){
+      $.list.innerHTML+='<p class="note">已拒绝：'+localIndex.rejected.map(function(x){
+        return esc(x.dir)+'('+esc(x.reason)+')';}).join('、')+'</p>';
+    }
+    Array.prototype.forEach.call($.list.querySelectorAll('button[data-act]'),function(btn){
+      btn.addEventListener('click',function(){
+        act(btn.getAttribute('data-act'),btn.getAttribute('data-id'),btn.getAttribute('data-dir'));
+      });
+    });
+    $.probe.textContent=JSON.stringify({scan:{count:localIndex.plugins.length,
+      rejected:localIndex.rejected},host:host.probe()},null,2);
+  }
+
+  // 启用：取源码 → 前端门禁 checkPair → 注入执行 → register 真实现 → enable
+  function activate(id,dir){
+    return fetchSource(dir).then(function(d){
+      if(!d.ok) return {ok:false,code:'E_SOURCE',reason:d.reason||'source fetch failed'};
+      var g=gate.checkPair(d.manifest,d.source);
+      if(!g.ok) return g;
+      var s=document.createElement('script');
+      s.textContent=d.source;
+      document.head.appendChild(s);
+      var impl=window.ArtPlugins&&window.ArtPlugins[id];
+      if(!impl||typeof impl.mount!=='function')
+        return {ok:false,code:'E_NO_IMPL',reason:'window.ArtPlugins['+id+'] missing'};
+      var reg=host.register(d.manifest,impl,d.source);
+      if(!reg.ok) return reg;
+      return host.enable(id);
+    });
+  }
+
+  function act(kind,id,dir){
+    if(kind==='off'){
+      var r=host.disable(id);
+      appendVerdict('禁用 '+id,r,true);
+      render();return;
+    }
+    activate(id,dir).then(function(res){
+      appendVerdict('启用 '+id,res,true);
+      render();
+    }).catch(function(e){
+      appendVerdict('启用 '+id,{ok:false,code:'E_EXCEPTION',reason:String(e)},true);
+    });
+  }
+
+  document.getElementById('scan').addEventListener('click',function(){
+    scanLocal().then(function(){render();appendVerdict('扫描本地目录',
+      {ok:true,code:'OK',reason:'发现 '+localIndex.plugins.length+' 个插件'},true);})
+      .catch(function(e){appendVerdict('扫描本地目录',{ok:false,code:'E_SCAN',reason:String(e)},true);});
+  });
+  document.getElementById('emit').addEventListener('click',function(){
+    var r=bus.emit('beats',{x:30+Math.round(Math.random()*40),y:30+Math.round(Math.random()*40)});
+    var n=document.querySelectorAll('.art-ripple-ink span,.art-inkdot span').length;
+    appendVerdict('发射节拍',{ok:r&&n>0,code:'EMIT',reason:'delivered='+r+' 落点节点='+n},true);
+  });
+
+  document.getElementById('gOk').addEventListener('click',function(){
+    appendVerdict('合法 manifest',gate.checkManifest({id:'com.demo.ripple',name:'演示',version:'1.0.0',
+      type:'art-effect',slot:'ripple',execution:'cold',entry:'plugin.js',hostApi:'>=1.0.0',
+      capabilities:['dom:body']}),true);
+  });
+  document.getElementById('gWater').addEventListener('click',function(){
+    appendVerdict('water 槽',gate.checkManifest({id:'com.demo.badwater',name:'坏插件',version:'1.0.0',
+      type:'art-effect',slot:'water',execution:'cold',entry:'plugin.js',hostApi:'>=1.0.0'}),false);
+  });
+  document.getElementById('sOk').addEventListener('click',function(){
+    appendVerdict('合法源码',gate.checkSource("(function(){window.ArtPlugins={x:{mount:function(){},unmount:function(){}}};})();"),true);
+  });
+  document.getElementById('sBad').addEventListener('click',function(){
+    appendVerdict('碰 __water 源码',gate.checkSource("window.__water.tune({});"),false);
+  });
+
+  document.getElementById('slotsOk').textContent=(gate&&gate.REGISTRABLE_SLOTS||[]).join(', ');
+  document.getElementById('slotsNo').textContent=(gate&&gate.FORBIDDEN_SLOTS||[]).join(', ');
+  if(!gate||!bus||!host){$.hs.textContent='依赖缺失';}
+  else{$.hs.textContent='门禁 '+gate.GATE_VERSION;}
+
+  // 真机自检：?selftest=1 跑"扫描→门禁红绿→启用→落点→事件→禁用归零"全链路
+  if(/[?&]selftest=1/.test(location.search)){
+    var box=document.createElement('pre');box.id='selftest-result';
+    document.body.appendChild(box);
+    var checks=[];
+    function ck(name,cond,detail){checks.push({name:name,pass:!!cond,detail:detail||''});}
+    function mf(){return {id:'com.demo.ripple',name:'演示',version:'1.0.0',type:'art-effect',
+      slot:'ripple',execution:'cold',entry:'plugin.js',hostApi:'>=1.0.0',capabilities:['dom:body']};}
+
+    scanLocal().then(function(){
+      ck('依赖加载',!!gate&&!!bus&&!!host);
+      ck('扫描到本地插件',localIndex.plugins.length>=1,'count='+localIndex.plugins.length);
+      var gOk=gate.checkManifest(mf());
+      var bad=JSON.parse(JSON.stringify(mf()));bad.slot='water';
+      var gBad=gate.checkManifest(bad);
+      ck('合法 manifest 通过',gOk.ok,gOk.code);
+      ck('water 槽被拒(见红)',!gBad.ok&&gBad.code==='E_FORBIDDEN_SLOT',gBad.code);
+      var sBad=gate.checkSource("window.__water.tune({});");
+      ck('碰 __water 源码被拒(见红)',!sBad.ok&&sBad.code==='E_FROZEN_GLOBAL',sBad.code);
+
+      var p=localIndex.plugins[0];
+      ck('插件来自本地文件夹',p&&p.source==='local',p&&p.source);
+      // 后端门禁镜像：确认违规目录在服务端就被拒（用一个临时不存在的扫描根另测见 verify 脚本）
+      return fetchSource(p.dir).then(function(d){
+        ck('源码路由返回',d.ok,d.reason||'OK');
+        var g=gate.checkPair(d.manifest,d.source);
+        ck('真插件过 checkPair',g.ok,g.code);
+        var s=document.createElement('script');s.textContent=d.source;document.head.appendChild(s);
+        var impl=window.ArtPlugins&&window.ArtPlugins[p.id];
+        ck('插件暴露 mount',!!impl&&typeof impl.mount==='function');
+        var reg=host.register(d.manifest,impl,d.source);
+        ck('register 真插件',reg.ok,reg.code);
+        var e=host.enable(p.id);
+        ck('enable 激活',e.ok,e.code);
+        var on=host.list().filter(function(x){return x.id===p.id;})[0];
+        ck('状态 activated',on&&on.state==='activated',on&&on.state);
+        ck('落点 DOM 插入',!!document.querySelector('.art-inkdot')||!!document.getElementById('reactorcore'));
+        var rc=document.getElementById('reactorcore');
+        ck('堆芯画布在运行',!!rc&&rc.style.display==='block');
+        var dis=host.disable(p.id);
+        ck('disable 成功',dis.ok,dis.code);
+        var rcOff=document.getElementById('reactorcore');
+        ck('落点 DOM 归零',!document.querySelector('.art-inkdot')&&(!rcOff||rcOff.style.display==='none'));
+        var off=host.list().filter(function(x){return x.id===p.id;})[0];
+        ck('状态 deactivated',off&&off.state==='deactivated',off&&off.state);
+      });
+    }).then(function(){
+      var pass=checks.filter(function(c){return c.pass;}).length;
+      box.textContent=JSON.stringify({pass:pass,total:checks.length,
+        all:pass===checks.length,checks:checks},null,2);
+      document.title=(pass===checks.length?'SELFTEST_PASS':'SELFTEST_FAIL')+' '+pass+'/'+checks.length;
+    }).catch(function(err){
+      box.textContent='SELFTEST_ERROR '+err;
+      document.title='SELFTEST_ERROR';
+    });
+    return; // 自检模式不跑普通首扫
+  }
+
+  // 普通模式：首次自动扫描
+  scanLocal().then(render).catch(function(e){
+    $.list.innerHTML='<div class="empty">扫描失败：'+esc(e.message||e)+'</div>';
+  });
+})();
+</script>
+</body>
+</html>

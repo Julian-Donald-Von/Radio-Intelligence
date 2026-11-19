@@ -1,0 +1,41 @@
+# === 大文件 / 运行时 / 隐私（绝不上传）===
+venv/
+models/
+installer_output/
+installer/payload/
+data_runtime/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*_LOG.txt
+LOGIN_CLEARED.json
+RESET_FACTORY.json
+installed_version.txt
+
+# === 插件运行态/缓存 ===
+plugins/**/__pycache__/
+plugins/art-effects/*/__pycache__/
+
+# === 备份/临时 ===
+*.bak
+*.bak-*
+*.tmp
+.tmp/
+_archive/
+_parked_plugins/
+*.zip
+
+# === 用户数据 ===
+data/skins/_tmp/
+data/skins/_verify_engine_proj/
+data/*.db
+data/*.db-*
+data_runtime/*.db*
+
+# === 编辑器/OS ===
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

@@ -14,7 +14,7 @@
 
 </div>
 
-> **This is a showcase, not the source distribution.** It hosts the project overview, screenshots and screen recordings. The source tree, the visual layer's implementation and the emotion-recognition training protocol are not published. See [Repository scope](#repository-scope).
+> **Source is visible here; rights are reserved.** The source tree is published for reading and study. All artistic content, code skeleton and algorithms remain **All Rights Reserved** — only the author may distribute or authorise commercial use. See [Repository scope](#repository-scope) and [License](LICENSE.md).
 
 ---
 
@@ -181,7 +181,7 @@ This work is a manuscript **under double-blind review**. To keep it anonymous, n
 ## Repository scope
 
 - **In this repository:** this README, screenshots, three recordings and the poster.
-- **Not published:** the source tree; the visual layer's rendering model, parameterization and tuning data; the emotion-recognition model, training protocol, label sources and scores; the manuscript identity.
+- **Visible but rights-reserved:** the source tree (readable, not licensed for redistribution or commercial use); the visual layer's rendering model and parameterization; the emotion-recognition model and training protocol. **Not published:** label sources and scores; the manuscript identity.
 - Recordings show the application as it actually ran on the developer's machine.
 
 ---
@@ -191,19 +191,24 @@ This work is a manuscript **under double-blind review**. To keep it anonymous, n
 ### Documentation
 The written documentation is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/): share and view with attribution for **non-commercial** purposes; **no** distribution of modified versions.
 
-### Artistic & creative content
+### Artistic, creative, code-skeleton & algorithmic content
 
 <div align="center">
 <b>© 2026 Mr. Unpunctual. All rights reserved.</b>
 </div>
 
-This notice covers all rights the author holds under applicable law in the **visual and artistic features and creative assets** of this project — including the liquid water body, global refraction, liquid-glass lens, poster canvas, breathing core, ripple / wavefront rendering, palettes, the RI logo, the poster, cover artwork, screenshots, generated visual assets, and any artistic or design features. This is a worldwide **all-rights-reserved** declaration, **not limited to this repository**; it applies wherever these works appear.
+This notice covers all rights the author holds under applicable law in the **visual and artistic features, creative assets, code skeleton (templates / scaffolding) and algorithms** of this project — including the liquid water body, global refraction, liquid-glass lens, poster canvas, breathing core, ripple / wavefront rendering, palettes, the RI logo, the poster, cover artwork, screenshots, generated visual assets, and any artistic or design features. This is a worldwide **all-rights-reserved** declaration, **not limited to this repository**; it applies wherever these works appear.
 
 - Public display, access or the technical ability to download does **not** constitute an open licence or permission for commercial use.
 - No commercial use — including paid distribution, publication, advertising, merchandise or commercial adaptation — is permitted without the author's prior **written** permission.
 - Republication, copying, redistribution, further translation, adaptation and derivative works likewise require written permission; attribution or a stated noncommercial purpose alone grants nothing.
 - A licence for the documentation or website code does **not** automatically cover this creative content. Statutory exceptions (fair use / fair dealing) and hosting-platform rights remain unaffected.
 - No rights are assigned or transferred by this notice. For any permission, obtain written consent from the author.
+
+### Third-party music sources / 第三方音源
+**EN** — This distribution contains **no third-party music-source integration** from commercial music platforms. Such services are **not** bundled. If the user chooses to add them as plugins, the user alone is responsible for any terms of service, copyright and local legal compliance; the author grants no rights to those services and assumes no liability for their use.
+**中文** — 本发行版**不含任何第三方音乐平台接入**，这些服务**不随包分发**。若用户自行以插件形式添加，其服务条款、版权及当地法律合规均由用户自行负责；作者不授予任何相关权利，亦不承担由此产生的责任。
+
 
 ---
 

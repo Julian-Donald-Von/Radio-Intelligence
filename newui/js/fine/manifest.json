@@ -1,0 +1,679 @@
+[
+  {
+    "name": "state-core",
+    "source": "ui-core.js",
+    "space": "状态/模式/post/工具",
+    "decls": [
+      "$",
+      "API",
+      "st",
+      "MODES",
+      "modeIdx",
+      "post",
+      "fmt"
+    ]
+  },
+  {
+    "name": "ring-progress",
+    "source": "ui-core.js",
+    "space": "SVG进度环/播放头",
+    "decls": [
+      "framePath",
+      "pathD",
+      "computeFramePath",
+      "_frameProgLen",
+      "ringHoldTimer",
+      "frameHeadNear",
+      "HEAD_NEAR",
+      "bindFrameHeadProximity",
+      "updateFrameProgress"
+    ]
+  },
+  {
+    "name": "eq-tick",
+    "source": "ui-core.js",
+    "space": "EQ频谱条",
+    "decls": [
+      "eqTimer",
+      "eqTick",
+      "startEq",
+      "stopEq"
+    ]
+  },
+  {
+    "name": "beat-pulse",
+    "source": "ui-core.js",
+    "space": "封面音频律动",
+    "decls": [
+      "beatLevel",
+      "beatPulse",
+      "beatTick"
+    ]
+  },
+  {
+    "name": "cover-palette",
+    "source": "ui-core.js",
+    "space": "封面取色",
+    "decls": [
+      "applyCoverPalette"
+    ]
+  },
+  {
+    "name": "render-core",
+    "source": "ui-core.js",
+    "space": "render/默认皮肤",
+    "decls": [
+      "_defSkin",
+      "ensureDefaultSkin",
+      "render"
+    ]
+  },
+  {
+    "name": "theme-prefs",
+    "source": "ui-skinset.js",
+    "space": "主题/偏好状态/高亮",
+    "decls": [
+      "THEMES",
+      "DEF_THEME",
+      "uiThemeKey",
+      "uiAccent",
+      "uiBgMode",
+      "uiWallpaper",
+      "uiOnTop",
+      "uiWaterOpts",
+      "WATER_OPTS_DEF",
+      "accentLocked",
+      "lockAccent"
+    ]
+  },
+  {
+    "name": "prefs-io",
+    "source": "ui-skinset.js",
+    "space": "偏好落盘/去抖/序号",
+    "decls": [
+      "PREFS_DEBOUNCE_MS",
+      "PREFS_SID",
+      "prefsSeq",
+      "persistPrefs",
+      "flushPrefs"
+    ]
+  },
+  {
+    "name": "beat-switch",
+    "source": "ui-skinset.js",
+    "space": "音频律动开关",
+    "decls": [
+      "uiBeat",
+      "setBeat",
+      "syncBeatUI"
+    ]
+  },
+  {
+    "name": "theme-apply",
+    "source": "ui-skinset.js",
+    "space": "主题应用/皮肤网格",
+    "decls": [
+      "applyThemePalette",
+      "hexToRgb",
+      "applyPrefsTheme",
+      "syncSkinUI"
+    ]
+  },
+  {
+    "name": "drawers",
+    "source": "ui-skinset.js",
+    "space": "双抽屉推挤透视",
+    "decls": [
+      "drawerSpr",
+      "applyDrawerTransform",
+      "drawerSetTarget",
+      "openDrawer",
+      "closeDrawer",
+      "anyDrawerOpen",
+      "openSettings",
+      "closeSettings",
+      "openTheme",
+      "closeTheme",
+      "refreshSettings"
+    ]
+  },
+  {
+    "name": "bgmode",
+    "source": "ui-skinset.js",
+    "space": "背景效果 poster/acrylic",
+    "decls": [
+      "setBgMode",
+      "syncBgModeUI"
+    ]
+  },
+  {
+    "name": "ontop-water",
+    "source": "ui-skinset.js",
+    "space": "叠层水面+参数组",
+    "decls": [
+      "ONTOP_IDS",
+      "onTopNormalize",
+      "setOnTop",
+      "syncOnTopUI",
+      "applyWaterOpts",
+      "syncWaterOptsUI",
+      "segSync",
+      "waterOptsPatch",
+      "bindSeg",
+      "bindWaterOpts",
+      "wpType"
+    ]
+  },
+  {
+    "name": "wallpaper-src",
+    "source": "ui-skinset.js",
+    "space": "封面/logo/壁纸偏好恢复",
+    "decls": [
+      "useCoverSkin",
+      "applyBrandSkin",
+      "applyWallpaperPref",
+      "bindWallpaper"
+    ]
+  },
+  {
+    "name": "wallpaper-io",
+    "source": "ui-skinset.js",
+    "space": "壁纸上传导入",
+    "decls": [
+      "uploadWallpaperFile",
+      "uploadWallpaperZip",
+      "importWallpaperSrc",
+      "importWallpaperEngine"
+    ]
+  },
+  {
+    "name": "video-wallpaper",
+    "source": "ui-skinset.js",
+    "space": "视频壁纸",
+    "decls": [
+      "applyWallpaperVideo",
+      "hideVideoWallpaper",
+      "applyWallpaperImage"
+    ]
+  },
+  {
+    "name": "dislike-list",
+    "source": "ui-skinset.js",
+    "space": "不喜欢列表",
+    "decls": [
+      "renderDislikeList"
+    ]
+  },
+  {
+    "name": "skinset-bind",
+    "source": "ui-skinset.js",
+    "space": "设置事件绑定",
+    "decls": [
+      "bindSettingsEvents"
+    ]
+  },
+  {
+    "name": "corner-buttons",
+    "source": "ui-skinset.js",
+    "space": "角落按钮",
+    "decls": [
+      "bindCornerButtons"
+    ]
+  },
+  {
+    "name": "settings-schema",
+    "source": "ui-settings.js",
+    "space": "SETTING_SCHEMA",
+    "decls": [
+      "QWEN3_TTS_VOICES",
+      "FAMILIARITY_LABELS",
+      "SETTING_SCHEMA"
+    ]
+  },
+  {
+    "name": "settings-api",
+    "source": "ui-settings.js",
+    "space": "工具/后端通道",
+    "decls": [
+      "setEsc",
+      "setPathGet",
+      "restoreFoldState",
+      "setApiGet",
+      "setApiSet",
+      "setApiTest",
+      "setStatus",
+      "setMark"
+    ]
+  },
+  {
+    "name": "settings-render",
+    "source": "ui-settings.js",
+    "space": "设置控件渲染",
+    "decls": [
+      "setControl",
+      "renderSettingsGroups"
+    ]
+  },
+  {
+    "name": "qr-login",
+    "source": "ui-settings.js",
+    "space": "扫码登录",
+    "decls": [
+      "startQrLogin",
+      "openQrModal",
+      "pollQrLoop",
+      "closeQrModal"
+    ]
+  },
+  {
+    "name": "settings-fold",
+    "source": "ui-settings.js",
+    "space": "折叠委托",
+    "decls": [
+      "initSettingsFolds"
+    ]
+  },
+  {
+    "name": "fx-water",
+    "source": "ui-settings.js",
+    "space": "高级视觉调参",
+    "decls": [
+      "FX_WATER_SCHEMA",
+      "buildFxWater"
+    ]
+  },
+  {
+    "name": "dock-ctl",
+    "source": "ui-dock.js",
+    "space": "dock控制/播放三键",
+    "decls": [
+      "dock",
+      "ctlBusy",
+      "ctl"
+    ]
+  },
+  {
+    "name": "confetti",
+    "source": "ui-dock.js",
+    "space": "礼花粒子",
+    "decls": [
+      "spawnBurst"
+    ]
+  },
+  {
+    "name": "fav-dislike",
+    "source": "ui-dock.js",
+    "space": "喜欢/不喜欢",
+    "decls": []
+  },
+  {
+    "name": "ai-radio",
+    "source": "ui-dock.js",
+    "space": "AI伴听/电台开关",
+    "decls": [
+      "bindToggle",
+      "volEl"
+    ]
+  },
+  {
+    "name": "volume",
+    "source": "ui-dock.js",
+    "space": "音量",
+    "decls": [
+      "setVolFromEvent"
+    ]
+  },
+  {
+    "name": "seek",
+    "source": "ui-dock.js",
+    "space": "进度seek/120段采样",
+    "decls": [
+      "seeking",
+      "REMOTE_TOL_MS",
+      "seekGuardUntil",
+      "_seekPostAt",
+      "adoptRemotePosition",
+      "seekToMs",
+      "dockSeek",
+      "beginSeek"
+    ]
+  },
+  {
+    "name": "orbit-geo",
+    "source": "ui-orbit.js",
+    "space": "圆盘几何",
+    "decls": [
+      "ORBIT_MODE_ORDER",
+      "ORBIT_IDS",
+      "orbitEls",
+      "ORBIT_R",
+      "ORBIT_EDGE",
+      "baseDy",
+      "ORBIT_O_SHIFT",
+      "orbitGeo",
+      "orbitOC"
+    ]
+  },
+  {
+    "name": "orbit-rotate",
+    "source": "ui-orbit.js",
+    "space": "圆盘轮转/动画",
+    "decls": [
+      "ORBIT_POS_LIST",
+      "orbitActive",
+      "orbitShown",
+      "orbitAnim",
+      "ORBIT_SPIN_DEG",
+      "orbitSpinDir",
+      "orbitSpinDeg",
+      "orbitCurPos",
+      "orbitAngOf",
+      "orbitArcPoint",
+      "orbitPlace",
+      "orbitCurrentAng",
+      "orbitLayoutRAF",
+      "orbitRequestLayout",
+      "orbitLayout",
+      "orbitRotate",
+      "orbitInZone",
+      "cardsInZone",
+      "AUTO_HIDE_MS",
+      "autoHideTimer",
+      "armAutoHide",
+      "pokeShow",
+      "pokeHide",
+      "colTimer",
+      "pokeColumn",
+      "syncColumnPanel",
+      "columnProbeZone",
+      "columnFlashOnMode",
+      "hideColumnIfIdle",
+      "syncColumnByPlaying",
+      "PANEL_SEL",
+      "isolatedZone",
+      "shelfCardZone",
+      "lyricZone"
+    ]
+  },
+  {
+    "name": "liquid-bg",
+    "source": "liquid.js",
+    "space": "液态背景",
+    "decls": [
+      "canvas",
+      "_ready",
+      "_imgW",
+      "VERT",
+      "FRAG",
+      "initGL",
+      "resize",
+      "draw",
+      "tick",
+      "apply_"
+    ]
+  },
+  {
+    "name": "liquid-lens",
+    "source": "liquid_glass.js",
+    "space": "液态玻璃透镜",
+    "decls": [
+      "supportsLG",
+      "SVGNS",
+      "XLINK",
+      "defs",
+      "defsEl",
+      "smoothstep",
+      "clamp128",
+      "sdf",
+      "buildMap",
+      "registry",
+      "makeFilter",
+      "buildMapFor",
+      "applyGlass",
+      "TARGETS",
+      "run",
+      "start"
+    ]
+  },
+  {
+    "name": "poster-canvas",
+    "source": "poster.js",
+    "space": "歌词海报画布",
+    "decls": [
+      "cv",
+      "lyricLines",
+      "viewPos",
+      "viewPosInit",
+      "hoverIdx",
+      "hoverAt",
+      "HOVER_RETURN_MS",
+      "LH",
+      "viewTarget",
+      "state",
+      "FONT",
+      "lyricUrl",
+      "init",
+      "resize",
+      "drawSkinBase",
+      "drawPoster",
+      "LYRIC_EASE",
+      "_lastBoxW",
+      "drawLyricView",
+      "loop",
+      "parseLRC"
+    ]
+  },
+  {
+    "name": "state-apply",
+    "source": "ui-state.js",
+    "space": "applyState/歌词/toast",
+    "decls": [
+      "PLAY_GRACE_MS",
+      "_playGraceUntil",
+      "armPlayGrace",
+      "clearPlayGrace",
+      "inPlayGrace",
+      "applyState",
+      "lastDjAt",
+      "djHold",
+      "clearDjHold",
+      "aiWaitTimer",
+      "setAIWaiting",
+      "positionAIBar",
+      "showAIBar",
+      "setAIBarText",
+      "hideToken",
+      "hideAIBar",
+      "loadBroadcast",
+      "toast",
+      "positionToast",
+      "lyricTrackKey",
+      "lyricLoading",
+      "lyricReqSeq",
+      "loadLyrics"
+    ]
+  },
+  {
+    "name": "column",
+    "source": "ui-column.js",
+    "space": "栏目头/漫游滑块",
+    "decls": [
+      "COL_META",
+      "modeName",
+      "syncColumnHead",
+      "ORBIT_API",
+      "onOrbitModeChange",
+      "RS_LABELS",
+      "rsSlider",
+      "rsTimer",
+      "rsShow",
+      "rsHide",
+      "rsAutoShow",
+      "syncRecMode",
+      "PLAYALL_API"
+    ]
+  },
+  {
+    "name": "sidepanel",
+    "source": "ui-sidepanel.js",
+    "space": "侧栏四tab",
+    "decls": [
+      "sideOpen",
+      "sideTab",
+      "HEART_SVG",
+      "BROKEN_SVG",
+      "PLAY_SVG",
+      "NEXT_SVG",
+      "RECO_SVG",
+      "DEL_SVG",
+      "rowSideActions",
+      "drowHtml",
+      "_disKey",
+      "sideItems",
+      "sidePlist",
+      "loadSidePanel",
+      "openPlaylist",
+      "SIDE_TITLE",
+      "positionSidePanel",
+      "openSidePanel",
+      "closeSidePanel",
+      "spPlayAll",
+      "spClose",
+      "bindSideBtn"
+    ]
+  },
+  {
+    "name": "cards-wall",
+    "source": "ui-cards.js",
+    "space": "弹簧卡片墙",
+    "decls": [
+      "CARD_W",
+      "SHELF_CARD_HALF",
+      "ARC_STEP",
+      "STEP_Z",
+      "VISIBLE",
+      "shelfCenterX",
+      "Spring",
+      "spring",
+      "cards",
+      "lastSig",
+      "lastCurId",
+      "keyOf",
+      "sigOf",
+      "pendingReset",
+      "scrollToCurrent",
+      "esc",
+      "PAL",
+      "buildCards",
+      "sampleCoverColor",
+      "updateCardProgress",
+      "layout",
+      "step",
+      "cardsBox",
+      "VIEWS"
+    ]
+  },
+  {
+    "name": "ws-events",
+    "source": "ui-view.js",
+    "space": "WS事件",
+    "decls": [
+      "curView",
+      "plistGroup",
+      "plistSource",
+      "loadView",
+      "loadCards",
+      "poll",
+      "ws"
+    ]
+  },
+  {
+    "name": "eq-panel",
+    "source": "ui-eq.js",
+    "space": "EQ面板",
+    "decls": [
+      "EQ_FREQS",
+      "EQ_PRESETS",
+      "EQ_PRESET_HINT",
+      "EQ_LABELS",
+      "eqState",
+      "eqPanelOpen",
+      "_dynTimer",
+      "eqFetch",
+      "eqPost",
+      "syncEqPower",
+      "syncSeg",
+      "renderBands",
+      "fmtFreq",
+      "fmtDb",
+      "onBandInput",
+      "renderChips",
+      "pickPreset",
+      "setSource",
+      "setDynamic",
+      "setPower",
+      "resetBands",
+      "openEqPanel",
+      "closeEqPanel",
+      "toggleEqPanel",
+      "isEqOpen",
+      "initEqUI"
+    ]
+  },
+  {
+    "name": "eggs",
+    "source": "ui-eggs.js",
+    "space": "彩蛋",
+    "decls": [
+      "pick",
+      "_mode",
+      "deriveMode",
+      "tick",
+      "readPhysics",
+      "diagnostics",
+      "_eventCounts",
+      "events",
+      "FG",
+      "_todayKey",
+      "_fgUsed",
+      "_fgBump",
+      "freqGate",
+      "discoveryMatrix",
+      "ARCHIVE_HTML",
+      "archive",
+      "_closeArchive",
+      "tune"
+    ]
+  },
+  {
+    "name": "search",
+    "source": "ui-init.js",
+    "space": "搜索/建议/切源",
+    "decls": [
+      "initSearchR54",
+      "SEM_OPT_V"
+    ]
+  },
+  {
+    "name": "init-bridge",
+    "source": "ui-init.js",
+    "space": "初始化迁移/桥接",
+    "decls": [
+      "migrateSemOpts"
+    ]
+  },
+  {
+    "name": "ai-bar",
+    "source": "ui-init.js",
+    "space": "AI口播栏常驻",
+    "decls": []
+  },
+  {
+    "name": "main-loop",
+    "source": "ui-init.js",
+    "space": "主循环/轮询",
+    "decls": [
+      "_lastTick"
+    ]
+  }
+]

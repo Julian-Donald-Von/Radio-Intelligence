@@ -1,0 +1,2242 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="6I96O2hrJ69uV8U3awCDwE">
+<head data-page-node-id="M9L40BDrAf2GxuiMVNpqBK">
+<meta charset="UTF-8" data-page-node-id="BroqfUuFOV9LvzUAM2qtKj">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="AIH0DqMCc4yuMV9WzeTsBi">
+<title>Radio Intelligence · AI 智能电台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- ═══ R60 启动提速：Google Fonts 改非阻塞引入 ═══
+     原 <link rel="stylesheet"> 是 render-blocking —— QWebEngine/无外网时会
+     卡在字体请求上拖慢首屏。用 media=print + onload 交换：先以打印媒体
+     （不阻塞）请求，引入完切回 all。字体是渐进增强，UI 用系统雅黑兜底。 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600&family=Ma+Shan+Zheng&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<!-- ═══ R60：启动提速 —— 13 个脚本 preload 并行下载 ═══
+     脚本在 body 尾**顺序同步**执行（R58-7 共享顶层作用域契约，不能 async/defer），
+     但同步 script 是「边解析边发现→串行下载」→ 13 次往返吃掉首屏。
+     preload 让浏览器在 HTML 解析早期就**并行预取**全部模块，
+     执行顺序仍由 DOM 顺序保证（零行为改变，纯网络并行增益）。 -->
+<link rel="preload" as="script" href="/liquid.js">
+<link rel="preload" as="script" href="/liquid_glass.js">
+<link rel="preload" as="script" href="/poster.js">
+<link rel="preload" as="script" href="/ui-core.js">
+<link rel="preload" as="script" href="/ui-state.js">
+<link rel="preload" as="script" href="/ui-dock.js">
+<link rel="preload" as="script" href="/ui-orbit.js">
+<link rel="preload" as="script" href="/ui-column.js">
+<link rel="preload" as="script" href="/ui-sidepanel.js">
+<link rel="preload" as="script" href="/ui-cards.js">
+<link rel="preload" as="script" href="/ui-view.js">
+<link rel="preload" as="script" href="/ui-skinset.js">
+<link rel="preload" as="script" href="/ui-settings.js">
+<link rel="preload" as="script" href="/ui-init.js">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   dock 的液态玻璃 / 按钮 / 进度 / 音量 全部**沿用原 ui/ai-radio-player.html**
+   配方来源：
+     L257 #dock 玻璃本体      L260 .hovering 上浮    L439 噪点
+     L441 ::after 倒影        L280 .dock-left        L286 .dbtn（极简）
+     L287 #d-mode 三态        L493 #d-play（透明）   L506 breathe 呼吸圈
+     L510 #eq 均衡器          L430 #vol-track        L431 #vol-fill 渐变
+     L446 #frame-progress     L458 #frame-glow       L2708 computeFramePath
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --primary:#7c6cff; --secondary:#3ddc97; --accent:#a99bff;
+  --dark:#0b0a14; --light:#e8e6f2; --fg:#e8e6f2;
+  --ease-out:cubic-bezier(.22,.8,.28,1);
+  --ease-outback:cubic-bezier(.34,1.56,.64,1);
+  /* R56 抽屉推挤/透视参数（.drawer-open 时主界面左推 + rotateY） */
+  --drawer-push:min(9vw, 132px);
+  --drawer-tilt:6.5deg;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; color:var(--fg); font:14px/1.6 "Inter","Microsoft YaHei",system-ui,sans-serif;
+  /* ⚠ R58-4 (#43) + R59：body 底色随主题走（--dark 由 applyThemePalette 写入）。
+     旧版把主题色压在两个小 radial 角落 + 近黑 #0b0a14 大面积露底 → 用户报
+     "一开屏还是一大块黑色只有一点是背景色"。
+     R59：主题色 radial 加强加亮 + 底色改为**主题色混入的深渐变**
+     （primary→dark→secondary 斜向），开屏不再是一大坨黑；运行时更会被
+     #bgimg 的默认皮肤/封面盖住（见 ui-core.ensureDefaultSkin）。 */
+  background:
+    radial-gradient(120vw 90vh at 14% -14%, color-mix(in srgb, var(--primary) 46%, transparent), transparent 60%),
+    radial-gradient(110vw 80vh at 96% 116%, color-mix(in srgb, var(--secondary) 36%, transparent), transparent 58%),
+    linear-gradient(155deg,
+      color-mix(in srgb, var(--dark, #0b0a14) 74%, var(--primary)) 0%,
+      var(--dark, #0b0a14) 55%,
+      color-mix(in srgb, var(--dark, #0b0a14) 80%, var(--secondary)) 100%);
+  overflow:hidden;
+}
+
+
+#poster-canvas{
+  /* ═══ R78：歌词海报文字层提到水面之上（z=3），歌词不被水面叠层盖住 ═══ */
+  position:absolute; inset:0; width:100%; height:100%; z-index:3;
+}
+/* ═══ 液态玻璃背景层（原 UI L41 / L734+） ═══ */
+#bg{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+  /* ⚠ R58-4 (#43) + R59：默认层同样提亮 —— 主题色 45%+ 光晕大范围铺开，
+     歌词海报画布之下（画布 R59 起全透明）不再是一大坨黑。 */
+  background:
+    radial-gradient(95vw 90vh at 28% 18%, color-mix(in srgb, var(--primary) 46%, transparent), transparent 64%),
+    radial-gradient(80vw 80vh at 78% 90%, color-mix(in srgb, var(--secondary) 34%, transparent), transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--dark) 76%, var(--primary)), var(--dark) 60%, color-mix(in srgb, var(--dark) 84%, var(--secondary)));
+}
+#bgimg{
+  /* ═══ R61：封面皮肤"不要放太大"（用户原话："放大到它的下底边和屏幕长
+     一样大、居中显示就好"）═══
+     旧布局 inset:0 + width/height:100% + object-fit:cover —— cover 以
+     图片短边撑满为准，竖图/方图会被放到超出屏幕范围（巨物感 + 糊）。
+     新布局：宽恒=屏宽（"下底边与屏幕长一样大"），高按图片内在比例
+     height:auto，垂直居中（top:50% + translateY(-50%)）；图高不足屏高时
+     上下自然露出主题渐变底，不再硬撑全屏。
+     ⚠ transform 被 acrylic 的 scale 复用 —— 所有后续 transform 规则必须
+     带 translateY(-50%) 前缀，否则居中失效。 */
+  position:absolute; left:0; top:50%; width:100%; height:auto;
+  transform:translateY(-50%);
+  opacity:0; transition:opacity .8s ease;
+}
+/* ═══ R57-1：背景三层模型（重构 R55/R56「封面=亚克力」的错位）═══
+   用户语义（原话）：「歌词海报+导入的都属于自定义壁纸；亚克力属于背景
+   效果，在背景基础上把背景做成亚克力」。
+
+   分层（R60 用户最终拍板，自上而下）：
+     [UI 层] 歌词文字/column/dock/口播栏/提示气泡/抽屉…… 全部在效果层之上
+     [效果层] bgmode=poster(无效果/锐利) | acrylic —— 对**皮肤**整体做效果
+              · poster = 皮肤原样锐利直出（也是一种"效果"，无滤镜）
+              · acrylic = 对同一皮肤做**明亮** blur（磨砂亮玻璃观感）
+     [皮肤层] #bgimg = 背景**内容**位：当前封面 / 自定义壁纸 / 程序化默认皮肤
+              #poster-canvas = 透明歌词海报文字层（R59 起画布不画任何蒙层）
+              #bg（body 同款主题渐变）= 皮肤缺省时最底下的主题底
+
+   body class 语义（互相独立）：
+     · bgmode-acrylic = 「亚克力背景效果」开关：对皮肤(#bgimg)做明亮 blur
+     · wp-active = 自定义壁纸优先（切歌不被封面覆盖）
+       ⚠ R59：wp-active **不**再自带 filter:none 覆盖 —— 旧规则
+       `body.wp-active #bgimg.has-bg{filter:none}` 后声明压过 acrylic，
+       导致"导入壁纸后点明亮亚克力永远没效果"（用户点名）。自定义壁纸
+       与封面一样只是背景**内容**，明亮亚克力 blur 对两者都应生效；
+       wp-active 现在的职责仅剩「切歌不被封面覆盖」（JS render 判定）。 */
+/* 皮肤层：有图(src)即显示（默认锐利） */
+#bgimg.has-bg{
+  opacity:.9;
+}
+/* ═══ 效果层 · 亚克力（皮肤之上可选明亮 blur）═══
+   ⚠ R58-4 (#43)：用户原话「亚克力也不是暗色的亚克力而是 blur 那种明亮的亚克力」——
+   明亮 = 大 blur + 提亮 + 高饱和（磨砂亮玻璃观感）。
+   ⚠⚠ R60：**略微回调亮度** —— 原 brightness(1.06)+saturate(1.35) 太亮，
+   液态玻璃(dock/口播栏)透出底下过曝的皮肤 → 白字看不清（用户点名）。
+   ⚠⚠⚠ R61：还是太亮 → **加淡淡灰**（用户原话："背景和亚克力效果还是太亮
+   了，可以适当添加一点点那种淡淡的灰色（略微暗色的亚克力）"）。
+   ⚠⚠⚠⚠ R62：用户要求"亚克力模糊降低约 5%~10%" → blur(72px) **降到 66px**
+   （约降 8.3%）—— 磨砂纹理轻一些、玻璃更透；saturate(1.18) brightness(.82)
+   灰阶配方保持（白字可读性不动）。
+   新配方 blur(66px) saturate(1.18) brightness(.82)：blur 后灰阶压暗整层
+   —— 磨砂观感保留，但不再白花花刺眼，玻璃上的白字/控件清晰。
+   过渡 .25s：从"无效果"切来/切走时不会闪烁（旧直切在大图上有爆亮一帧）。
+   注意 #bgimg 自带 translateY(-50%) 居中 —— scale(1.06) 不可吞掉它。 */
+body.bgmode-acrylic #bgimg.has-bg{
+  filter:blur(66px) saturate(1.18) brightness(.82);
+  opacity:.96; transform:translateY(-50%) scale(1.06);
+  transition:opacity .8s ease, filter .25s ease;
+}
+/* 自定义皮肤（wp-active）在无 acrylic 时同样做轻微柔化+灰（R60：不过度明亮；
+   R61：再淡一点灰，让液态玻璃白字/歌词海报白字都清晰） */
+body:not(.bgmode-acrylic) #bgimg.wp-active.has-bg{
+  filter:saturate(1.05) brightness(.86);
+}
+/* WebGL 折射层接管后，SVG 滤镜下岗（避免双重滤镜开销与闪烁） */
+#bgimg.liquid-canvas{filter:none; opacity:0}
+/* ═══ R62 #10：视频壁纸（#bgvideo）═══
+   · 与 #bgimg 同层同布局：absolute 铺 #bg、垂直居中；
+   · 默认隐藏（opacity:0 + visibility:hidden），applyWallpaperVideo 显示；
+   · 画面比例：object-fit:cover 撑满（视频不像图片有"底边=屏宽"诉求，
+     壁纸引擎类视频期望铺满全屏不露底）；transform 也带 translateY(-50%)。
+   · acrylic 对 video 生效：下方 body.bgmode-acrylic 规则选择器含 #bgvideo.has-bg。 */
+#bgvideo{
+  position:absolute; left:0; top:50%; width:100%; height:100%;
+  object-fit:cover; transform:translateY(-50%);
+  opacity:0; visibility:hidden; transition:opacity .8s ease;
+  background:#000;
+}
+#bgvideo.has-bg{opacity:.9; visibility:visible}
+body.bgmode-acrylic #bgvideo.has-bg{
+  filter:blur(66px) saturate(1.18) brightness(.82);
+  opacity:.96; transform:translateY(-50%) scale(1.06);
+  transition:opacity .8s ease, filter .25s ease;
+}
+#bgliquid{
+  /* R78 显式 z=1：水面(2)折射它的同时歌词层(3)又在水面之上 */
+  position:absolute; inset:0; width:100%; height:100%; z-index:1;
+  display:none; opacity:0; transition:opacity .6s ease;
+}
+#bgliquid.on{display:block; opacity:1}
+
+/* ═══ R70：Emotional Water 水面层（P1）═══
+   调研 docs/water_research_emotional.md §15.2 D2：水面 = #bg 内 on-top 层。
+   R78 叠层修正（用户真机反馈"叠层视觉在歌词上面"）：歌词海报(#poster-canvas)
+   是**文字/内容层**、须在水面之上；水面只压液态玻璃(#bgliquid，z=1)——
+   自上而下：#poster-canvas(3) → #water(2) → #bgliquid(1) → 皮肤层(0)。
+   水面仍对效果层做真折射（uScene 采样，R78c 起采样源 = 皮肤之上最上的效果层）。
+   · R78c：pointer 交互已移除（用户不用鼠标拖水面）；涟漪仅来自音频 onset。
+   · 关闭时 display:none 零开销；模拟由 ui-water.js 的治理器控制。 */
+#water{
+  position:absolute; inset:0; width:100%; height:100%; z-index:2;
+  display:none;
+  /* R78c：拖拽涟漪已取消（用户拍板）→ 不拦截指针，空背景事件穿透给下层 */
+}
+#water.on{display:block}
+
+.stage{position:fixed; inset:18px 0 130px; display:flex; align-items:center; justify-content:center; padding:24px}
+/* ═══════════════════════════════════════════════════════════════
+   R56 · 右侧大卡抽屉 + 主界面推挤透视
+   「设置 / 皮肤」是两张从右缘伸出的玻璃大卡；打开时**主卡片架 #cards**
+   被往左推，且带**旋转透视**——逆时针观感 = 主界面左缘朝屏幕外、右缘朝屏内。
+   ⚠ 刻意不推 #column-panel / #aibar：#aibar 的 left 由 positionAIBar 按
+   column-panel 实时 rect 锚定，两者都推会产生双重位移；它们靠左，
+   抽屉（右）不遮挡，无需让位。orbit/dock 同理保持原位。
+   body.drawer-open 驱动位移 + 旋转；关闭平滑回正。
+   ═══════════════════════════════════════════════════════════════ */
+body.drawer-open #cards{
+  /* 用 perspective() 函数内联在自身 transform，保证 3D 透视稳定
+     （不依赖祖先 perspective，避免 fixed 子元素渲染上下文不一致）。
+     顺序：透视 → 左推 → 绕 Y 旋转（右缘朝屏内 = 逆时针观感）。
+     ⚠ R57-9 真透视：transform-origin 偏向右侧（抽屉一侧）→ 左缘离
+     perspective 视点更远、右缘更近，rotateY 的纵深更明显 —— 主界面
+     看起来是真的被右抽屉"推"进屏幕深处，而非整体平移动画。
+     无 JS 时此规则兜底；JS 弹簧驱动时内联 style 覆盖 transform，
+     transform-origin 沿用本规则（不冲突）。 */
+  transform-origin:88% 50%;
+  transform:perspective(1500px)
+             translateX(calc(-1 * var(--drawer-push, 120px)))
+             rotateY(var(--drawer-tilt, 7deg));
+  transition:transform .55s var(--ease-out);
+}
+
+.placeholder{text-align:center; color:rgba(232,230,242,.6); max-width:560px}
+.placeholder h2{
+  margin:0 0 10px; font-size:20px; font-weight:650;
+  background:linear-gradient(92deg,var(--light),var(--accent));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.placeholder code{background:rgba(255,255,255,.1); padding:2px 7px; border-radius:5px; font-size:12px}
+
+/* ═══════════ 货架卡片：3D 弧排布（沿用原 #shelf 动画，原文件 L636 / L4648） ═══════════
+   与原 UI 一致：容器 3D 透视 + 卡片 absolute，由 rAF 逐帧算 transform。
+   原版是「右侧 fixed 卡片架，与 orbit 按钮同心」；此处适配为**居中弧心**，
+   但保留全部动画灵魂：弹簧物理 / 弧排布 / 悬停浮起 / 错峰揭示 / 景深模糊。 */
+#cards{
+  position:absolute; inset:18px 0 132px; overflow:hidden; z-index:1;
+  perspective:1500px; perspective-origin:50% 50%; transform-style:preserve-3d;
+}
+
+.scard{
+  position:absolute; left:0; top:0; width:372px; height:120px; flex:none;
+  border-radius:20px; display:flex; align-items:center; gap:15px; padding:0 18px;
+  cursor:pointer; visibility:hidden; will-change:transform,opacity;
+  --tone-a:var(--accent); --tone-b:var(--primary);
+  background:linear-gradient(152deg, rgba(36,31,62,.92), rgba(14,12,28,.95));
+  border:1px solid rgba(255,255,255,.17);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24), inset 0 -2px 10px rgba(0,0,0,.42), 0 14px 38px rgba(0,0,0,.5);
+  overflow:hidden; transition:border-color .25s ease, box-shadow .25s ease;
+}
+/* Mineradio 卡片语言：tone 斜向色洗 + 38px 网格线（纯装饰，不吃点击） */
+.scard::before{
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:.62; z-index:0;
+  background:
+    linear-gradient(118deg, color-mix(in srgb, var(--tone-a) 20%, transparent), transparent 40%, color-mix(in srgb, var(--tone-b) 15%, transparent) 76%, transparent),
+    linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 38px);
+}
+.scard:hover{
+  border-color:rgba(255,255,255,.36);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 20px 52px rgba(0,0,0,.56),
+             0 0 30px color-mix(in srgb,var(--tone-a) 14%, transparent);
+}
+.scard.playing{
+  border-color:color-mix(in srgb,var(--accent) 55%, rgba(255,255,255,.2));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 18px 48px rgba(0,0,0,.55),
+             0 0 26px color-mix(in srgb,var(--accent) 24%, transparent);
+}
+/* ═══ R49-29：曲库当前播放卡 = 全场最醒目的卡 ═══
+   实心 accent 描边 + 双层外发光（宽晕 24px + 内晕 8px）→ 中心区扫一眼即锁定。
+   ::after 是发光环：inset 0 铺满 + 圆角贴合，纯装饰不吃点击。
+   ⚠ 不用 outline（会被 overflow:hidden 裁掉）：box-shadow 已有但增强内层辉光。 */
+.scard.playing::after{
+  content:''; position:absolute; inset:-1px; border-radius:21px; pointer-events:none; z-index:1;
+  border:1.5px solid color-mix(in srgb, var(--accent) 78%, white 6%);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--accent) 38%, transparent),
+    0 0 8px  color-mix(in srgb, var(--accent) 55%, transparent),
+    inset 0 0 18px color-mix(in srgb, var(--accent) 12%, transparent);
+  animation:scplaying 2.6s ease-in-out infinite;
+}
+@keyframes scplaying{
+  0%,100%{ box-shadow:0 0 22px color-mix(in srgb,var(--accent) 34%, transparent),
+                    0 0 7px  color-mix(in srgb,var(--accent) 50%, transparent),
+                    inset 0 0 16px color-mix(in srgb,var(--accent) 10%, transparent); }
+  50%    { box-shadow:0 0 30px color-mix(in srgb,var(--accent) 46%, transparent),
+                    0 0 12px color-mix(in srgb,var(--accent) 66%, transparent),
+                    inset 0 0 24px color-mix(in srgb,var(--accent) 16%, transparent); }
+}
+.sc-cover{
+  position:relative; z-index:2; width:88px; height:88px; border-radius:16px;
+  overflow:hidden; flex:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+}
+.sc-cover img{width:100%; height:100%; object-fit:cover; display:block}
+.sc-info{position:relative; z-index:2; flex:1; min-width:0; padding-bottom:18px}
+.sc-name{
+  font-size:16px; font-weight:740; color:rgba(255,255,255,.97); letter-spacing:.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.scard.playing .sc-name{color:var(--accent)}
+.sc-sub{
+  font-size:12.5px; color:rgba(255,255,255,.56); margin-top:5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.sc-chip{
+  position:relative; z-index:2; flex:none; font-size:10px; letter-spacing:2px;
+  padding:4px 9px; border-radius:9px;
+  background:color-mix(in srgb,var(--primary) 30%, transparent);
+  border:1px solid rgba(255,255,255,.14); color:rgba(255,255,255,.85);
+}
+.sc-eq{display:none; flex:none; align-items:flex-end; gap:2px; height:14px}
+.scard.playing .sc-eq{display:flex}
+.sc-eq i{width:2.5px; border-radius:2px; background:var(--accent); transform-origin:bottom; animation:sceq .9s ease-in-out infinite}
+@keyframes sceq{0%,100%{height:30%}50%{height:100%}}
+#cards .empty{color:rgba(232,230,242,.45); font-size:13px; padding:30px 0}
+/* ═══════════ R47 卡片自动隐藏 + 行操作 + 渐变进度条 ═══════════ */
+/* 卡片架自动隐藏：opacity 渐变（保留 3D 上下文与布局、不重排） */
+#cards{ transition: opacity .5s ease; }
+#cards.autohide{ opacity:0; pointer-events:none; }
+/* ⚠ #orbits 的隐藏样式在下方 Orbit 块里（基础 opacity:0 ↔ .show 1），此处不重复声明 */
+/* ⚠ 渐变采样进度条：取样自封面图（drawImage 1×1 取主色），
+     失败兜底 → 卡片槽位调色板 PAL[i]；
+     仅在 .scard.playing 时显示宽度，避免未播放卡片也"长了脚"。 */
+.scard .sc-prog{
+  position:absolute; left:0; right:0; bottom:0; height:3px;
+  background:rgba(255,255,255,.07); z-index:3; opacity:0;
+  transition:opacity .3s ease;
+}
+.scard.playing .sc-prog{ opacity:1; }
+.scard .sc-prog .fill{
+  display:block; height:100%; width:0%;
+  background:linear-gradient(90deg, var(--tone-a) 0%, var(--tone-b) 100%);
+  box-shadow:0 0 10px color-mix(in srgb, var(--tone-a) 60%, transparent);
+  transition:width .35s ease;
+}
+/* 卡片行操作：悬停才出现，避免遮挡信息。
+   ⚠ R49-28：用户要求操作按钮**沉到卡片右下缘并保留余边**（不再垂直居中）。
+   卡高 120、右下 padding 10px → bottom:10px 距下缘 10px、right:10px 距右缘 10px。 */
+.scard .sc-acts{
+  position:absolute; right:10px; bottom:10px;
+  display:flex; gap:6px; z-index:4; opacity:0;
+  pointer-events:none; transition:opacity .2s ease;
+}
+.scard:hover .sc-acts{ opacity:1; pointer-events:auto; }
+.scard .sc-acts button{
+  width:30px; height:30px; border-radius:10px; border:1px solid rgba(255,255,255,.18);
+  background:rgba(20,16,38,.7); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  color:rgba(255,255,255,.72); cursor:pointer; display:grid; place-items:center;
+  transition:transform .15s var(--ease-outback), color .15s ease, border-color .15s ease;
+  padding:0;
+}
+.scard .sc-acts button:hover{ transform:translateY(-1px) scale(1.06); color:#fff; border-color:rgba(255,255,255,.36); }
+.scard .sc-acts button svg{ width:14px; height:14px; }
+/* 不喜欢按钮：on 状态染色（红心 + 斜杠），与 #d-dislike 配色一致 */
+.scard .sc-acts button[data-act="dislike"].on{ color:#ff5c7a; border-color:rgba(255,92,122,.45); }
+/* 喜欢 ♥：on 状态实心红（老 UI .act-fav.on 配方：fill=currentColor + 斜杠无） */
+.scard .sc-acts button[data-act="fav"].on{ color:#ff5c7a; border-color:rgba(255,92,122,.45); }
+.scard .sc-acts button[data-act="fav"].on svg path:first-child{ fill:currentColor; stroke:none; }
+/* plist 卡片不显示行操作（歌单是容器，点开看曲目才是主操作） */
+.scard.is-plist .sc-acts{ display:none; }
+
+/* ═══════════ R49-31 漫游滑块：推荐风格四档（dock 上方悬浮，仅漫游栏目显示） ═══════════
+   移植自老 ui/ai-radio-player.html L420-428 / L3023-3070。
+   .on = 显示容器（display:flex）；.visible = 可见（opacity/transform 过渡）。
+   悬浮于 dock 上方 14px，居中；鼠标靠近显现、离开淡出；切到漫游自动闪现几秒。 */
+#rec-style{
+  position:fixed; left:50%; bottom:calc(24px + 88px + 14px); transform:translateX(-50%) translateY(10px);
+  display:none; align-items:center; gap:12px; padding:9px 16px; border-radius:20px;
+  background:rgba(16,16,24,.62); backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
+  border:1px solid rgba(255,255,255,.16); box-shadow:0 14px 34px rgba(0,0,0,.55);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .45s ease, transform .45s ease, visibility .45s;
+  white-space:nowrap; z-index:210;
+}
+#rec-style.on{display:flex}
+#rec-style.visible{opacity:1; visibility:visible; pointer-events:auto; transform:translateX(-50%) translateY(0)}
+.rs-label{font-size:12px; color:rgba(255,255,255,.78); letter-spacing:1.5px; font-weight:500}
+/* T6：滑块复用进度条配色（--primary→--accent）+ 液态玻璃 + 档位亮度。
+   大小严格不变：150×4，thumb 14×14（照抄原配方）。 */
+#rs-slider{width:150px; height:4px; -webkit-appearance:none; appearance:none;
+  background:linear-gradient(90deg,var(--primary) 0%,var(--accent) 100%);
+  border-radius:2px; outline:none; cursor:pointer; margin:0;
+  /* 用户：进度条外发光不要；仅保留液态玻璃 inset 高光 */
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28);
+  backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+  transition:filter .3s ease, box-shadow .3s ease}
+/* 未到最右档位（非"更陌生"）：颜色稍暗一档；到最右全亮 */
+#rs-slider[data-full="0"]{filter:brightness(.72) saturate(.9)}
+#rs-slider[data-full="1"]{filter:brightness(1)}
+#rs-slider[data-full="0"]::-webkit-slider-thumb{box-shadow:0 0 5px rgba(0,0,0,.5)}
+#rs-slider[data-full="1"]::-webkit-slider-thumb{box-shadow:0 0 9px color-mix(in srgb,var(--accent) 70%,transparent)}
+#rs-slider::-webkit-slider-thumb{width:14px;height:14px;border-radius:50%;background:#fff;
+  border:1px solid rgba(255,255,255,.75); box-shadow:0 0 8px rgba(0,0,0,.45); cursor:pointer; -webkit-appearance:none}
+#rs-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;
+  border:1px solid rgba(255,255,255,.75); box-shadow:0 0 8px rgba(0,0,0,.45); cursor:pointer}
+.rs-val{font-size:12px; color:#fff; min-width:44px; text-align:center; font-weight:600; letter-spacing:.5px}
+
+/* ═══════════ R68 · EQ：dock #eq 命中区 + #eq-panel 悬浮面板 ═══════════
+   dock #eq 本体仍是 5 条律动（ui-core eqTick 驱动），只扩大命中区做按钮：
+   ::before 撑出 38px 圆形热区（透明，纯命中不绘制）。 */
+#eq{ cursor:pointer }
+#eq::before{
+  content:''; position:absolute; left:50%; top:50%;
+  width:38px; height:38px; transform:translate(-50%,-50%);
+  border-radius:50%; background:transparent;
+  transition:background .2s ease; z-index:-1;
+}
+/* R76：EQ 按钮不要任何外圈底色/光环/呼吸 —— hover/focus/.on 的 ::before
+   一律保持透明（纯命中热区），状态只靠 5 条律动自身亮度/颜色表达。 */
+#eq:hover::before{ background:transparent }
+#eq:focus-visible{ outline:none }
+#eq:focus-visible::before{ background:transparent }
+#eq.on{ color:var(--accent) }
+#eq.on::before{ background:transparent }
+#eq.on i{ opacity:1 }
+
+/* EQ 面板：dock 正上方居中悬浮（同 #rec-style 轴，z-230）；
+   亮玻璃配方 = dock/settings-gear 一族（saturate 透光 + 内高光 + 外投影）。 */
+#eq-panel{
+  position:fixed; left:50%; bottom:calc(24px + 88px + 14px);
+  transform:translateX(-50%) translateY(10px);
+  width:min(400px, 92vw); z-index:230;
+  border-radius:20px; padding:16px 18px 14px;
+  background:linear-gradient(180deg, rgba(28,27,44,.92), rgba(16,16,26,.94));
+  backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.55), inset 0 -2px 6px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(255,255,255,.1), 0 18px 48px rgba(0,0,0,.6),
+             0 0 30px color-mix(in srgb, var(--primary) 12%, transparent);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .35s var(--ease-out), transform .35s var(--ease-out), visibility .35s;
+  color:rgba(255,255,255,.9);
+}
+#eq-panel.open{ opacity:1; visibility:visible; pointer-events:auto; transform:translateX(-50%) translateY(0) }
+#eq-panel .eqp-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px }
+#eq-panel h3{ margin:0; font-size:15px; font-weight:700; letter-spacing:1px }
+/* ═══ R69→R75b：EQ 总开关 = 顶栏圆钮开关 ═══
+   R69 自绘 iOS track/thumb → R71 加大 44×22 → R75a 原生横向 range 可见（被否）
+   → R75b（用户拍板「要设置里面圆圆的那个，不需要拖动」）复刻设置面板
+   .fx-toggle 圆钮开关。label 壳保留（C7 契约：label click 翻转 + range 冒泡
+   合成 click 短路），视觉全由下方 .tk 表达。 */
+.eqp-switch{
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+  margin-left:auto; margin-right:8px; user-select:none; line-height:0;
+}
+.eqp-switch .eqp-sw-lb{
+  font-size:11.5px; font-weight:600; letter-spacing:1px; color:rgba(255,255,255,.5);
+  transition:color .2s; line-height:1;
+}
+/* ⚠⚠ R75b：用户拍板「要设置里面圆圆的那个，不需要拖动」→ 弃 R75a 可见原生 range
+   外观，改复刻设置面板 .fx-toggle / .tk 圆钮开关（胶囊 + 白圆点，点击切换）。
+   range 保留为隐形契约元素（verify_eq_r68 C7：#eqp-power label click 翻转 +
+   #eqp-power-range 冒泡合成 click 短路），视觉全由 .tk 表达，无需拖动。 */
+.eqp-switch input[type=range]{
+  position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+}
+.eqp-switch .tk{
+  position:relative; width:36px; height:20px; flex:none; border-radius:999px;
+  background:rgba(255,255,255,.14); transition:background .22s;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.35);
+}
+.eqp-switch .tk::after{
+  content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+  border-radius:50%; background:#fff; transition:transform .22s var(--ease-out);
+  box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.eqp-switch.on .eqp-sw-lb{ color:color-mix(in srgb, var(--accent) 85%, #fff) }
+.eqp-switch.on .tk{ background:var(--accent,#6a5cff) }
+.eqp-switch.on .tk::after{ transform:translateX(16px) }
+.eqp-close{
+  /* R71：去掉 margin-left:auto —— 标题与开关之间由 .eqp-switch 的 margin-left:auto
+     撑开，开关被推到右侧，关闭按钮恒定贴右缘（两个 auto 会均分导致开关居中） */
+  width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  background:transparent; border:1px solid rgba(255,255,255,.16); border-radius:50%;
+  color:rgba(255,255,255,.8); cursor:pointer; transition:color .2s, border-color .2s;
+}
+.eqp-close:hover{ color:#fff; border-color:rgba(255,255,255,.45) }
+.eqp-close svg{ width:13px; height:13px }
+.eqp-seg{ display:flex; gap:6px; margin-bottom:14px }
+.eqp-tab{
+  flex:1; padding:7px 0; font-size:12.5px; letter-spacing:1px; cursor:pointer;
+  background:rgba(255,255,255,.04); color:rgba(255,255,255,.65);
+  border:1px solid rgba(255,255,255,.08); border-radius:12px;
+  transition:background .2s, color .2s, border-color .2s;
+}
+.eqp-tab.on{ background:color-mix(in srgb, var(--accent) 20%, transparent); color:#fff;
+  border-color:color-mix(in srgb, var(--accent) 55%, transparent) }
+.eqp-tab:not(.on):hover{ color:#fff; background:rgba(255,255,255,.09) }
+.eqp-body{ min-height:150px }
+/* 手动 10 段：横排垂直滑杆（R68 老版布局，用户要求频谱回老版） */
+.eqp-bands{ display:flex; gap:6px; align-items:flex-end; justify-content:space-between;
+  height:150px; padding:4px 2px 0 }
+.eq-band{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; min-width:0 }
+.eq-band .b-freq{ font-size:9px; color:rgba(255,255,255,.4); letter-spacing:.3px; order:2 }
+.eq-band .b-db{ font-size:10px; color:color-mix(in srgb, var(--accent) 80%, #fff); font-weight:600; order:3 }
+.eq-band input[type=range]{
+  writing-mode:vertical-lr; direction:rtl; -webkit-appearance:slider-vertical;
+  width:20px; height:118px; margin:0 auto; order:1;
+}
+/* 预设 chips */
+.eqp-chips{ display:flex; flex-wrap:wrap; gap:8px }
+.eqp-chip{
+  padding:7px 13px; border-radius:14px; font-size:12.5px; cursor:pointer;
+  background:rgba(255,255,255,.05); color:rgba(255,255,255,.78);
+  border:1px solid rgba(255,255,255,.1); transition:all .18s;
+}
+.eqp-chip:hover{ background:rgba(255,255,255,.12); color:#fff }
+.eqp-chip.on{ background:color-mix(in srgb, var(--accent) 24%, transparent); color:#fff;
+  border-color:color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow:0 0 12px color-mix(in srgb, var(--accent) 25%, transparent) }
+.eqp-hint{ margin-top:14px; font-size:11.5px; line-height:1.7; color:rgba(255,255,255,.5) }
+/* 动态 */
+.eqp-row{ display:flex; align-items:center; gap:12px; margin-top:8px }
+.eqp-row label{ font-size:13px; color:rgba(255,255,255,.8); min-width:64px }
+.eqp-row input[type=range]{ flex:1; -webkit-appearance:none; height:4px; border-radius:2px;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, transparent), var(--accent));
+  outline:none }
+.eqp-row input[type=range]::-webkit-slider-thumb{ width:14px; height:14px; border-radius:50%;
+  background:#fff; border:1px solid rgba(255,255,255,.75); box-shadow:0 0 8px rgba(0,0,0,.4);
+  -webkit-appearance:none; cursor:pointer }
+.eqp-val{ min-width:40px; text-align:right; font-size:12px; color:#fff; font-weight:600 }
+.eqp-reset{ text-align:right; margin-top:8px }
+.eqp-mini{ font-size:11.5px; padding:5px 12px; border-radius:10px; cursor:pointer;
+  background:rgba(255,255,255,.05); color:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.12); transition:background .2s, color .2s }
+.eqp-mini:hover{ background:rgba(255,255,255,.13); color:#fff }
+/* ⚠ R69：底部整行 eqp-foot / eqp-power 大按钮已移除（总开关上移顶栏小滑块），
+   保留样式定义以防旧引用炸 CSS，但无对应 DOM 即不占高。 */
+
+
+/* ═══════════ 液态玻璃 dock ═══════════ */
+#dock{
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+  width:min(82vw,1180px,calc(100vw - 176px)); min-width:560px; height:88px;
+  border-radius:calc(88px * .45);
+  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  backdrop-filter:saturate(160%); -webkit-backdrop-filter:saturate(160%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.85),
+    inset 0 -2px 6px rgba(0,0,0,.45),
+    inset 0 0 0 1px rgba(255,255,255,.18),
+    0 14px 44px rgba(0,0,0,.5),
+    /* ⚠ R57-4：dock 外圈 glow 不用 var(--primary) —— 它会随封面动态取色
+       溢出到外圈进度条路径（进度沿 dock 胶囊轮廓走），左侧起点最明显。
+       改中性白柔光：进度条自身 #frameGrad(primary→accent) 渐变逻辑不动。 */
+    0 0 30px rgba(255,255,255,.09);
+  z-index:200; display:flex; align-items:center; padding:0 20px;
+  transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+#dock.hovering{
+  transform:translateX(-50%) translateY(-2px);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.6),
+    inset 0 0 28px rgba(255,255,255,.06),
+    0 18px 52px rgba(0,0,0,.62),
+    0 0 36px rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.32);
+}
+#dock::after{
+  content:''; position:absolute; left:4%; right:4%; top:calc(100% + 4px); height:30px;
+  background:inherit; filter:blur(5px); transform:scaleY(-1); opacity:.32;
+  -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.55), transparent 92%);
+  mask-image:linear-gradient(180deg, rgba(0,0,0,.55), transparent 92%);
+  pointer-events:none; border-radius:inherit; z-index:-1;
+}
+#dock svg.dock-noise{
+  position:absolute; inset:0; width:100%; height:100%;
+  border-radius:inherit; pointer-events:none; opacity:.035; z-index:0;
+}
+
+/* 外围环绕进度：沿 dock 胶囊轮廓（原 frame-svg） */
+#frame-svg{position:absolute; inset:0; width:100%; height:100%; z-index:3; pointer-events:none; overflow:visible}
+#frame-path{fill:none;stroke:rgba(255,255,255,.15);stroke-width:3;stroke-linecap:round;pointer-events:none}
+/* 光晕染：进度色渗进液态玻璃 —— **双层高斯衰减**（宽外晕 + 内晕）。
+   柔光感来自两层不同半径的宽衰减尾叠加，边界不再可辨。
+   ⚠ 刻意**不用** mix-blend-mode：它会强制该元素独立成层并让祖先整体重新合成，
+   而 bloom 的 stroke-dasharray 每帧都被 updateFrameProgress() 改写，
+   = 每帧一次全层重合成 → 连接后端后表现为**疯狂闪烁**（原 UI 踩过的坑）。 */
+#frame-bloom2{fill:none;stroke:url(#frameGrad);stroke-width:26;stroke-linecap:round;
+  filter:blur(14px);opacity:.26;pointer-events:none}
+#frame-bloom{fill:none;stroke:url(#frameGrad);stroke-width:10;stroke-linecap:round;
+  filter:blur(6px);opacity:.42;pointer-events:none}
+#frame-progress{
+  fill:none;stroke:url(#frameGrad);stroke-width:3;stroke-linecap:round;
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.3));pointer-events:none;
+}
+/* 进度条高光：走过的渐变条上叠一道玻璃折射高光 */
+#frame-glow{fill:none;stroke:url(#frameGlowGrad);stroke-width:1.6;stroke-linecap:round;
+  filter:blur(1.1px) drop-shadow(0 0 3px rgba(255,255,255,.6));opacity:.95;pointer-events:none}
+#frame-playhead{fill:#fff;filter:drop-shadow(0 0 4px rgba(255,255,255,.9))}
+#frame-playhead-core{fill:var(--accent)}
+/* 半隐藏的小白点（原 #frame-playhead）：opacity .55 + 金黄描边 + 发光，
+   让它像"贴在进度轨道上的一颗微光点"而不是实心圆。 */
+#frame-playhead{
+  fill:#fff; stroke-width:3; stroke:var(--framePlayColor,#ffd166);
+  filter:drop-shadow(0 0 10px var(--framePlayColor,#ffd166));
+  opacity:.55; transition:stroke-width .2s; pointer-events:none;
+}
+#frame-playhead-core{fill:#fff; pointer-events:none}
+/* dock 悬浮：播放头描边加粗 + 提亮（原 UI L469） */
+#dock.hovering #frame-playhead{stroke-width:4; opacity:.75}
+/* ⚠ #frame-hit 在下方「orbit/column/side panel」块统一定义（含 stroke-linecap:round;
+   与 stroke-width:20 透明描边），旧的 18px/无 round-cap 版本删除避免双重规则冲突。 */
+
+/* dock 内容层 */
+.dock-inner{position:relative; z-index:2; width:100%; height:100%}
+.dock-left{position:absolute; left:20px; top:0; bottom:0; display:flex; align-items:center; z-index:2}
+.dock-right{position:absolute; right:20px; top:0; bottom:0; display:flex; align-items:center; gap:6px; z-index:2}
+
+/* ---------- 极简按钮（原 .dbtn：无底色无边框，透明） ---------- */
+.dbtn{
+  position:absolute; left:50%; top:50%;
+  width:38px; height:38px; margin:0; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:none; color:rgba(232,230,242,.82);
+  cursor:pointer; border-radius:50%;
+  transition:transform .18s var(--ease-outback), filter .2s ease, color .2s ease;
+}
+.dbtn:hover{color:#fff; filter:drop-shadow(0 0 9px rgba(255,255,255,.6))}
+.dbtn svg{width:18px; height:18px}
+.dbtn:disabled{opacity:.35; cursor:not-allowed}
+/* ⚠ 用户要求：按钮是"简单的点亮"，不要"按一下跳一下"
+   → 这里**不写** :active{scale(...)}，只靠颜色/发光表达状态（原 .dbtn.on） */
+.dbtn.on{
+  color:var(--accent);
+  filter:drop-shadow(0 0 7px color-mix(in srgb,var(--accent) 60%, transparent));
+}
+/* 点亮后的呼吸圈（AI 伴听 / 电台模式共用，原 #d-ai.on::before + #d-radio.on::before） */
+.dbtn.pulse.on::before{
+  content:''; position:absolute; inset:-4px; border-radius:50%;
+  border:2px solid color-mix(in srgb,var(--accent) 40%, transparent);
+  animation:aiPulse 2.5s ease-in-out infinite; pointer-events:none;
+}
+@keyframes aiPulse{
+  0%,100%{transform:scale(.96); opacity:.5}
+  50%    {transform:scale(1.12); opacity:1}
+}
+/* 点击涟漪（喜欢 / 不喜欢，原 .ripple） */
+.ripple{
+  position:absolute; border-radius:50%; border:2px solid var(--accent);
+  transform:scale(.2); opacity:.4; pointer-events:none;
+  animation:ripple .5s ease-out forwards;
+}
+@keyframes ripple{ to{transform:scale(1.8); opacity:0} }
+
+/* 播放模式：三态循环（顺序→单曲循环→随机），loop_one 时 .on 高亮 */
+/* ⚠ 用户要求：播放模式（顺序/单曲循环/随机）**去底色、只保留按钮图标**，
+   点亮状态交给通用 .dbtn.on（颜色 + 发光），不再自己带背景/边框。 */
+#d-mode{transform:translate(calc(-50% - 104px),-50%); background:transparent; border:none}
+/* T2：三态点亮 + 色相区分（顺序=accent / 单曲循环=蓝 / 随机=紫），当前态一眼可辨 */
+#d-mode[data-mode="order"]{color:var(--accent)}
+#d-mode[data-mode="loop_one"]{color:#7ec8ff; filter:drop-shadow(0 0 8px rgba(126,200,255,.65))}
+#d-mode[data-mode="random"]{color:#d3a4ff; filter:drop-shadow(0 0 8px rgba(211,164,255,.65))}
+#d-prev{transform:translate(calc(-50% - 52px),-50%)}
+#d-next{transform:translate(calc(-50% + 52px),-50%)}
+
+/* 播放键：透明 + 呼吸圈（原 #d-play） */
+#d-play{
+  transform:translate(-50%,-50%); width:64px; height:64px;
+  background:transparent; box-shadow:none;
+}
+#d-play svg{width:22px; height:22px; transition:transform .18s var(--ease-outback)}
+#d-play::before{
+  content:''; position:absolute; inset:6px; border-radius:50%;
+  border:2px solid var(--accent); opacity:0;
+  animation:breathe 2.6s ease-in-out infinite;
+  pointer-events:none;
+}
+#d-play.playing::before{opacity:.8}
+@keyframes breathe{
+  0%,100%{transform:scale(1.05); opacity:.25}
+  50%    {transform:scale(1.1);  opacity:.55}
+}
+
+/* 均衡器（播放时跳动） */
+#eq{
+  position:absolute; left:50%; top:50%;
+  transform:translate(calc(-50% + 104px),-50%);
+  display:flex; align-items:flex-end; gap:3px;
+  height:20px; width:24px; justify-content:center; flex:none; z-index:2;
+}
+#eq i{width:2px; height:4px; border-radius:2px; background:var(--accent); opacity:.3; transition:height .12s linear}
+
+/* 其它按钮定位 */
+#d-dislike{position:static; width:32px; height:32px}
+/* R49 恢复：dock 喜欢 ♥（老 UI L844 同款）—— 点亮实心红 + 光晕，与不喜欢同族配色但无斜杠 */
+#d-fav{position:static; width:32px; height:32px}
+#d-fav.on{color:#ff5c7a; filter:drop-shadow(0 0 8px rgba(255,92,122,.75))}
+#d-fav.on svg{fill:currentColor}
+/* ⚠ 不喜欢点亮：心形+斜杠**直接变红**（实心填充 + 红色光晕），不是通用的 accent 紫。
+   原 SVG 是 fill="none" stroke="currentColor"，点亮时把 fill 也设成 currentColor 即成实心红心。 */
+#d-dislike.on{color:#ff5c7a; filter:drop-shadow(0 0 8px rgba(255,92,122,.75))}
+#d-dislike.on svg{fill:currentColor}
+#d-lyric{transform:translate(calc(-50% + 152px),-50%); font-size:13px; font-weight:600}
+/* 词点亮色与 AI 伴听呼吸灯同色（--accent 同族：呼吸圈=accent 40%，点亮文本=accent + 发光） */
+#d-lyric.on{color:var(--accent); filter:drop-shadow(0 0 7px color-mix(in srgb,var(--accent) 60%,transparent))}
+#d-queue{transform:translate(calc(-50% + 190px),-50%)}
+/* 三个面板入口各自独立（R46-4）：曲库/历史放左侧，播放列表在右侧。
+   ⚠ 不往 +228 放：dock 窄到 min-width:560px 时右侧有 #vol-group(right:150px)
+   与 .dock-right(right:20px)，+228 的按钮右缘会压上去。左侧 -142/-180 全程空闲。 */
+#d-history{transform:translate(calc(-50% - 142px),-50%)}
+
+/* ---------- 封面 ---------- */
+.dc-cover{
+  width:52px; height:52px; border-radius:10px; overflow:hidden; flex:none;
+  margin-right:14px; cursor:pointer; position:relative;
+  box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.dc-cover img{width:100%; height:100%; object-fit:cover; transition:transform .4s var(--ease-out), opacity .3s ease}
+/* 音频律动：beat-on 时封面过渡缩短（~10Hz 频谱跟手，0.4s 会糊掉节拍） */
+body.beat-on .dc-cover img{transition:transform .07s linear}
+/* ═══ R67-5：dock 封面无歌曲播放时显示 Radio Intelligence 玻璃 logo ═══
+   HTML 初始就给 #dc-cover-img 一个真实 src=/brand/logo_small.png（R78），
+   img 有 src → object-fit:cover 100% 占满 52×52、绝无浏览器破损图标。
+   下方 :not([src])/src="" 规则降级为纯 CSS 兜底（只在 src 被外部清空时生效，
+   background 同样 cover 铺满 + 居中，不再 70% 缩在偏下位 —— R78 修「没占满」）。 */
+.dc-cover #dc-cover-img:not([src]),
+.dc-cover #dc-cover-img[src=""]{
+  width:100%; height:100%;
+  background:#0d0d12 url('/brand/logo_small.png') center center / cover no-repeat;
+}
+.dc-meta{max-width:200px}
+.dc-meta .t{
+  font-size:14px; font-weight:620; color:var(--fg);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.dc-meta .a{
+  font-size:12px; color:rgba(232,230,242,.58); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ---------- 音量组（渐变随封面取色 → var(--primary)~var(--accent)） ---------- */
+/* 音量组：整体左移（原 right:96px 显得太空旷 → 加大 right 值即向左） */
+#vol-group{position:absolute; right:150px; top:0; bottom:0; display:flex; align-items:center; gap:8px; z-index:2}
+#vol-icon{position:static; width:30px; height:30px}
+#vol-icon svg{width:17px; height:17px}
+#vol-icon .vol-off{display:none}
+#vol-icon.muted .vol-off{display:block}
+#vol-icon.muted .vol-on{display:none}
+#vol{position:relative; width:76px; height:14px; display:flex; align-items:center; cursor:pointer}
+#vol-track{
+  position:relative; width:100%; height:4px; border-radius:2px;
+  background:rgba(255,255,255,.14); box-shadow:inset 0 1px 2px rgba(0,0,0,.3);
+}
+#vol-fill{
+  position:absolute; left:0; top:0; bottom:0; width:80%; border-radius:2px;
+  background:linear-gradient(90deg, var(--primary), var(--accent));
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.5),
+             0 0 8px color-mix(in srgb,var(--accent) 55%, transparent);
+}
+#vol-thumb{
+  position:absolute; top:50%; left:80%; width:10px; height:10px; border-radius:50%;
+  background:#fff; transform:translate(-50%,-50%);
+  box-shadow:0 0 8px rgba(255,255,255,.7); pointer-events:none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer · Orbit 导航（原 ui/ai-radio-player.html L78-117 / L748-755）
+   三按钮（漫游/收藏/歌单）在 R1 圆弧上轮转；
+   容器零尺寸锚点（避免全屏覆盖层干扰 hit-test）。
+   ⚠⚠ 基础透明度必须是 0（R48）：旧值 .8 导致"5 秒自动隐藏"只是从 1.0 变 0.8
+   —— 按钮永远看得见。现在 0 ↔ .show 1 才是真隐藏（不变位置，绝不位移；
+   鼠标进入触发区 pokeShow 才出现，离开 5 秒 pokeHide 淡出）。
+   触发区：以 O 为圆心、R2 = R1+99 为半径的圆弧区。
+   ═══════════════════════════════════════════════════════════════ */
+#orbits{
+  position:fixed; left:0; top:0; width:0; height:0; z-index:60;
+  pointer-events:none; opacity:0;
+  transition:opacity .35s ease;
+}
+#orbits.show{opacity:1; pointer-events:auto}
+#orbits:not(.show) .orbit{pointer-events:none}
+.orbit{
+  position:absolute; left:0; top:0;
+  width:108px; height:108px; border-radius:50%;
+  border:1px solid rgba(255,255,255,.26);
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.01));
+  backdrop-filter:saturate(160%);
+  -webkit-backdrop-filter:saturate(160%);
+  display:grid; place-items:center; cursor:pointer;
+  pointer-events:auto; opacity:.9; overflow:hidden;
+  transition:box-shadow .3s ease, opacity .4s ease, border-color .3s ease, background .3s ease;
+  color:rgba(255,255,255,.92);
+  box-shadow:
+    inset 0 5px 10px rgba(255,255,255,.16),
+    inset 0 -3px 8px rgba(0,0,0,.45),
+    0 12px 40px rgba(0,0,0,.5),
+    0 10px 26px rgba(0,0,0,.34);
+}
+.orbit svg{
+  position:relative; z-index:1;
+  width:52px; height:52px; color:rgba(255,255,255,.85);
+  transition:transform .18s var(--ease-outback), color .3s ease;
+}
+.orbit .ring{z-index:2}
+.orbit:hover{opacity:1 !important}
+.orbit:hover svg{transform:scale(1.05)}
+.orbit:active{
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.35),
+    inset 0 -2px 6px rgba(0,0,0,.45),
+    0 4px 14px rgba(0,0,0,.35);
+}
+.orbit:active svg{transform:scale(.88) translateY(2px)}
+.orbit.active{color:#fff; opacity:1}
+.orbit.active svg{opacity:1}
+.orbit .ring{
+  position:absolute; inset:-6px; border-radius:50%;
+  border:2px solid var(--accent); opacity:0;
+  box-shadow:0 0 14px color-mix(in srgb, var(--accent) 50%, transparent);
+  animation:orbitBreathe 3s ease-in-out infinite; pointer-events:none;
+}
+.orbit.active .ring{opacity:.6}
+@keyframes orbitBreathe{
+  0%,100%{transform:scale(.96); opacity:.3}
+  50%    {transform:scale(1.06); opacity:.6}
+}
+.orbit .badge{
+  position:absolute; bottom:-6px; right:-6px;
+  min-width:28px; height:28px; padding:0 7px; border-radius:14px;
+  background:rgba(16,16,28,.88); color:#fff; font-size:13px; font-weight:700;
+  display:grid; place-items:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer · AI 口播栏（#aibar）+ Toast
+   原 ui/ai-radio-player.html L796-801 / L123-132 / L597-599 / L700-702。
+   ⚠ 老 UI 把口播文案固定在**左上角**；引号 + 书法字 + 思考圈
+   是「AI 伴听」的视觉签名，逐行移植，不用近似实现。
+   ═══════════════════════════════════════════════════════════════ */
+/* ⚠ R53 口播栏重做（用户原话）：
+     "改做暗色圆角的液态玻璃（类似 dock 栏的算法加上调色）…稍稍大一点点
+      以至于不需要那个滚动条，字体也换成正常字体，口播不只展示 intro，
+      也要展示 outro，然后动画要平滑过渡。"
+   ⚠⚠ R55 口播栏再重做（用户原话）：
+     "去掉口播文案的引号，让这个栏稍微大一点以至于不需要滚动条，
+      而且暗色液态玻璃本质也是液态玻璃需要做透光和光线弯曲，参考
+      webui 的 dock，改大小调色即可。位置移动到左侧中部栏目提示
+      (column-panel)上方。"
+   · 真玻璃：**完全采用 dock 的玻璃配方**（原 ui/ai-radio-player.html L257 同款）
+     —— 亮色渐变底 + saturate(160%) 透光 + 锐利内高光 + 高亮上边框，
+     而不是 R53 那层近实心深紫 blur(2px)（那不透光也不弯曲）。
+   · 透镜弯曲由 liquid_glass.js #aibar target 提供（backdrop-filter:url(#lg-aibar)）
+   · 引号装饰（.quote-mark）R55 已移除（DOM 同步删除）
+   · 常规内容**不需要滚动条**（intro+outro 整段容纳）；max-height 仅做极端长文兜底
+   · 字体用正常 sans（同 R53）
+   · 位置：默认**左上备用位**；真正位置由 positionAIBar() 锚到
+     column-panel 正上方（见 JS），CSS 兜底避免 JS 未跑时贴死顶角 */
+#aibar{
+  position:fixed; left:48px; top:calc(50% - 260px); transform:translateY(10px);
+  width:min(430px, 62vw);
+  max-width:min(430px, 62vw);
+  z-index:70;
+  padding:15px 22px 14px;
+  border-radius:18px;
+  color:rgba(255,255,255,.96);
+  /* R55：dock 同款亮玻璃（调色=口播栏配色，尺寸=aibar 尺寸） */
+  background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+  backdrop-filter:saturate(170%);
+  -webkit-backdrop-filter:saturate(170%);
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.9),
+    inset 0 -2px 6px rgba(0,0,0,.4),
+    inset 0 0 0 1px rgba(255,255,255,.2),
+    0 16px 44px rgba(0,0,0,.55),
+    0 0 30px color-mix(in srgb, var(--primary) 14%, transparent);
+  opacity:0; pointer-events:none;
+  transition:opacity .5s var(--ease-out), transform .5s var(--ease-out),
+             border-color .3s ease, box-shadow .3s ease;
+}
+#aibar.show{opacity:1; transform:translateY(0); pointer-events:auto}
+#aibar.hide{opacity:0; transform:translateY(10px); transition:opacity .4s ease-in, transform .4s ease-in}
+/* 文案区：常规字体；无引号（R55 移除 quote-mark） */
+#ai-text{
+  font-family:'Inter','Microsoft YaHei',system-ui,sans-serif;
+  font-size:15px; line-height:1.8; color:rgba(255,255,255,.97);
+  position:relative; letter-spacing:.015em;
+  text-shadow:0 1px 12px rgba(0,0,0,.28);
+  overflow-wrap:break-word;
+}
+/* R53 平滑换字：旧句淡出（opacity+上移+微模糊）→ 新句浮现，比旧的生硬截断顺 */
+#ai-text .swap{animation:aiFade .55s cubic-bezier(.22,.8,.28,1)}
+@keyframes aiFade{
+  from{opacity:0; transform:translateY(7px); filter:blur(3px)}
+  to  {opacity:1; transform:none; filter:blur(0)}
+}
+#ai-bar-think{display:none; width:15px; height:15px; border-radius:50%;
+  border:2px solid rgba(255,255,255,.25); border-top-color:#fff;
+  animation:thinkSpin .9s linear infinite; margin-left:10px; flex:none;
+  vertical-align:-2px}
+#ai-bar-think.on{display:inline-block}
+@keyframes thinkSpin{to{transform:rotate(360deg)}}
+/* Toast：底部悬浮反馈气泡（后端 bus 会 emit toast 事件）
+   ⚠ R58-6 (#45)：统一锚点 = positionToast() 计算的 dock/滑块上方（所有提示同位置）；
+   出现/消失 = **原位淡变**（旧 CSS translate(-50%,16px)→0 既让气泡右偏半宽，
+   又造成"从下方飞上来"的位移动画 —— 用户要求原位淡变、不从上方/下方飞）。
+   定位全部交给 JS 内联 left/top，CSS 不叠加 transform。 */
+#toast{position:fixed; left:0; top:0;
+  background:rgba(12,10,28,.92); border:1px solid rgba(255,255,255,.16);
+  padding:11px 20px; border-radius:14px; font-size:13px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5); opacity:0;
+  transition:opacity .28s ease; z-index:500;
+  pointer-events:none; backdrop-filter:blur(20px)}
+#toast.show{opacity:1}
+#toast b{color:var(--accent)}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer · 栏目面板（column-panel）+ 音源切换 tabs
+   原 ui/ai-radio-player.html L139-167 / L622-628 / L763-789
+   显隐：空闲（未播放）或指针进入 orbit 圆弧热区 → 显示；离开热区 → 淡出。
+   ═══════════════════════════════════════════════════════════════ */
+#column-panel{
+  position:fixed; left:48px; top:50%; z-index:60;
+  width:min(420px, 40vw);
+  opacity:0;
+  transform:translateY(-50%) translateX(-26px);
+  pointer-events:none;
+  transition:opacity .45s ease, transform .5s var(--ease-out);
+  will-change:opacity, transform;
+}
+#column-panel.show{
+  opacity:1;
+  transform:translateY(-50%) translateX(0);
+  pointer-events:auto;
+}
+#column-head{margin:0 0 14px 6px; position:relative}
+.ch-kicker{
+  font-size:10px; font-weight:760; letter-spacing:.16em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--accent) 72%, #fff); margin-bottom:7px;
+  text-shadow:0 0 18px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.ch-title{
+  font-size:26px; font-weight:800; line-height:1.12; color:rgba(255,255,255,.97);
+  letter-spacing:.01em; text-shadow:0 6px 26px rgba(0,0,0,.55);
+}
+.ch-sub{
+  margin-top:7px; font-size:11.5px; letter-spacing:.04em;
+  color:rgba(255,255,255,.52);
+}
+.ch-rule{
+  margin-top:12px; height:1px; width:64px; border-radius:1px;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 85%, transparent), transparent);
+}
+.ch-chips{margin-top:12px; display:flex; gap:8px}
+.ch-chip{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:7px 14px; border-radius:18px;
+  border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.07);
+  color:rgba(255,255,255,.85); font-size:12px; font-weight:600; letter-spacing:.03em;
+  cursor:pointer;
+  transition:background .2s, border-color .2s, transform .2s var(--ease-outback);
+}
+.ch-chip:hover{background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.32)}
+.ch-chip:active{transform:scale(.94)}
+.ch-chip svg{width:14px; height:14px; pointer-events:none}
+/* 栏目切换时抬头做一次轻微上浮换字（与 orbit 轮转 600ms 同步） */
+#column-head.swap .ch-kicker,
+#column-head.swap .ch-title,
+#column-head.swap .ch-sub{animation:chSwap .5s cubic-bezier(.16,1,.3,1)}
+@keyframes chSwap{
+  from{opacity:0; transform:translateY(10px)}
+  to  {opacity:1; transform:none}
+}
+
+/* 音源切换 tabs（仅在 plist 栏目显示） */
+#plist-src{display:flex; gap:6px; margin-top:10px}
+#plist-src button{
+  padding:4px 11px; border-radius:13px;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.07);
+  color:rgba(255,255,255,.68); font-size:11px; cursor:pointer;
+  transition:background .2s, color .2s, border-color .2s;
+}
+#plist-src button:hover{background:rgba(255,255,255,.14); color:#fff}
+#plist-src button.on{
+  background:color-mix(in srgb, var(--accent) 78%, #fff);
+  color:#101018; font-weight:700; border-color:transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer · 侧边面板（side-panel）—— 历史/曲库/队列 三 tab
+   原 ui/ai-radio-player.html L533-577 / L3130-3333
+   ═══════════════════════════════════════════════════════════════ */
+#side-panel{
+  /* R49：left/bottom 由 positionSidePanel() 按「触发图标正上方」实时写入，
+     这里只留兜底默认（不再写死 right:60px —— 那是旧"右侧统一面板"的位置）。 */
+  position:fixed; left:0; bottom:calc(24px + 88px + 18px);
+  width:340px; max-height:420px;
+  border-radius:20px;
+  background:rgba(15,15,22,.9);
+  backdrop-filter:saturate(160%);
+  -webkit-backdrop-filter:saturate(160%);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 24px 64px rgba(0,0,0,.6);
+  z-index:310; overflow:hidden;
+  display:flex; flex-direction:column;
+  opacity:0;
+  transform:translateY(20px) scale(.96);
+  will-change:transform, opacity;
+  transition:opacity .35s var(--ease-out), transform .35s var(--ease-out);
+  pointer-events:none;
+}
+#side-panel.open{opacity:1; transform:none; pointer-events:auto}
+/* ═══ R65：歌单详情面板（点歌单卡展开）═══
+   用户原话："点开展示内容的时候是在屏幕中间，整体要比现在的窗口大 50%"。
+   → 屏幕正中（left/top 50% + translate 回半），尺寸 340×420 → **510×630**（1.5×）。
+   ⚠ 只在 .plist-mode（sideTab==='plist'）生效，队列/历史/曲库仍按触发图标上方弹出。
+   ⚠ .open 态必须复写 transform：基座 `#side-panel.open{transform:none}` 会把
+     居中用的 translate(-50%,-50%) 抹掉（同为 id+class，后者靠多一个类提高优先级）。
+   ⚠ 面板本体即「独立识别区」：滚轮/点击在它上面只归它自己
+     （见 ui-orbit.js isolatedZone / lyricZone 的 #side-panel 排除），
+     故放大居中后压住歌词带也不会带着歌词一起滚。 */
+#side-panel.plist-mode{
+  width:510px; max-width:min(510px, 92vw);
+  max-height:630px;
+  left:50%; top:50%; right:auto; bottom:auto;
+  transform:translate(-50%, -50%) translateY(20px) scale(.96);
+}
+#side-panel.plist-mode.open{transform:translate(-50%, -50%) scale(1)}
+#side-panel .sp-head{
+  display:flex; align-items:center; gap:8px;
+  padding:16px 18px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+/* ⚠ 侧边面板**没有 tab**（R46-4，用户要求"播放列表就是播放列表"）：
+   这里不再是一容器三 tab 的混合面板，而是**一个入口一个模式**
+   （老 UI 原样：#d-queue → 播放列表、#d-history → 播放历史、#d-library → 曲库），
+   标题 #sp-title 直接写当前模式名。旧 .sp-tabs / .sp-tab 样式已随 tab 一起删除。 */
+#side-panel .sp-title{
+  flex:1; padding:0; font-size:13px; font-weight:700; letter-spacing:.5px;
+  color:rgba(232,230,242,.92);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+/* 播放历史/播放列表的叉复用设置面板叉形态（30px 圆底 + hover rotate 90°） */
+#side-panel .sp-close{
+  width:30px; height:30px; border-radius:50%; border:none;
+  background:rgba(255,255,255,.08); display:grid; place-items:center;
+  color:rgba(255,255,255,.7); flex:none; cursor:pointer;
+  transition:background .2s, transform .2s var(--ease-outback);
+}
+/* ═══ R72：歌单详情(plist-mode)头部「播放全部」—— 整单入队（不逐行点播放）═══ */
+#side-panel .sp-pa{
+  display:inline-flex; align-items:center; gap:6px; flex:none;
+  padding:5px 12px; border-radius:15px; height:28px;
+  border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.08);
+  color:rgba(232,230,242,.9); font-size:11.5px; font-weight:600; letter-spacing:.03em;
+  cursor:pointer; transition:background .2s, border-color .2s, transform .2s var(--ease-outback);
+}
+#side-panel .sp-pa:hover{background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.34); color:#fff}
+#side-panel .sp-pa:active{transform:scale(.94)}
+#side-panel .sp-pa svg{width:13px; height:13px; pointer-events:none; color:var(--accent)}
+#side-panel .sp-close:hover{background:rgba(255,255,255,.16); color:#fff; transform:rotate(90deg)}
+#side-panel .sp-close svg{width:15px; height:15px}
+#side-panel .sp-body{flex:1; overflow-y:auto}
+#side-panel .sp-empty{
+  padding:26px 16px; text-align:center;
+  color:rgba(255,255,255,.4); font-size:13px;
+}
+#side-panel .drow{
+  display:flex; align-items:center; gap:11px;
+  padding:9px 18px; cursor:pointer;
+  transition:background .18s; position:relative;
+}
+#side-panel .drow:hover{background:rgba(255,255,255,.05)}
+#side-panel .drow img{
+  width:38px; height:38px; border-radius:9px;
+  object-fit:cover; flex:none; background:rgba(255,255,255,.07);
+}
+#side-panel .drow .dm{flex:1; min-width:0}
+#side-panel .drow .dn{
+  font-size:13.5px; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#side-panel .drow .da{
+  font-size:11.5px; color:rgba(255,255,255,.45);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-top:2px;
+}
+#side-panel .drow.playing .dn{color:var(--accent)}
+#side-panel .drow.playing::before{
+  content:''; position:absolute; left:0; top:0; bottom:0;
+  width:3px; background:var(--accent);
+  box-shadow:0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+#side-panel .dacts{display:flex; gap:4px; flex:none}
+#side-panel .dact{
+  width:24px; height:24px; border-radius:7px;
+  background:none; border:none; color:rgba(255,255,255,.45);
+  font-size:11.5px; cursor:pointer;
+  display:grid; place-items:center;
+  transition:background .18s, color .18s, transform .18s;
+}
+#side-panel .dact:hover{background:rgba(255,255,255,.12); color:#fff; transform:scale(1.1)}
+#side-panel .dact[data-act=del]:hover{color:#ff6b6b}
+#side-panel .dact[data-act=rm]:hover{color:#ff6b6b}
+#side-panel .dact[data-act=fav]{color:rgba(255,255,255,.5)}
+#side-panel .dact[data-act=fav]:hover{color:#ff5c7a}
+#side-panel .dact[data-act=fav].on{color:#ff5c7a}
+#side-panel .dact[data-act=fav].on svg path{fill:currentColor}
+#side-panel .dact[data-act=dislike]{color:rgba(255,255,255,.5)}
+#side-panel .dact[data-act=dislike]:hover{color:#ffb84d}
+#side-panel .dact[data-act=dislike].on{color:#ffb84d}
+#side-panel .dact[data-act=dislike].on svg path:first-child{fill:currentColor}
+#side-panel .dact[data-act=next]:hover{color:#7bf1a8}
+#side-panel .dact[data-act=reco]:hover{color:#ffd166}
+#side-panel .dact svg{width:15px; height:15px; pointer-events:none}
+
+/* 进度条命中带（精确算法：20px 透明描边，hover 26px） */
+#frame-hit{
+  fill:none; stroke:transparent; stroke-width:20;
+  stroke-linecap:round; pointer-events:stroke; cursor:pointer;
+}
+#dock.hovering #frame-hit{stroke-width:26}
+/* seeking 中：进度光晕增厚 + 播放头高亮（原 UI L471-473） */
+#dock.seeking #frame-bloom2{stroke-width:34; opacity:.46}
+#dock.seeking #frame-bloom{stroke-width:15; opacity:.7}
+#dock.seeking #frame-playhead{opacity:1; stroke-width:5}
+
+/* ═══════════ R53 全局滚动条：细、无白底、无上下箭头（用户原话）
+   "滚动条做细一点，不要白色底，不要上下箭头，只要那个条条做提示就 ok" ═══════════
+   只留一根细 thumb 提示滚动位置；track 透明、箭头按钮整块移除。 */
+*{scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.24) transparent}
+*::-webkit-scrollbar{width:5px; height:5px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.2); border-radius:3px;
+  border:none;
+}
+*::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.36)}
+*::-webkit-scrollbar-button{display:none; width:0; height:0; background:transparent}
+*::-webkit-scrollbar-corner{background:transparent}
+
+/* ═══════════════════════════════════════════════════════════════
+   R54 · 顶部搜索框（原 ui/ai-radio-player.html L264-278）
+   顶部居中，靠近页面顶部渐显（显隐逻辑见 JS initSearchR54）。
+   液态玻璃透镜本体由 liquid_glass.js 的 #search-box target 挂载，
+   这里保留普通 backdrop-filter 作 CSS 兜底。
+   ═══════════════════════════════════════════════════════════════ */
+#search-box{
+  position:fixed; left:50%; top:40px; transform:translateX(-50%) translateY(-8px);
+  width:min(420px, 56vw); height:46px; border-radius:23px;
+  display:flex; align-items:center; gap:10px; padding:0 18px;
+  z-index:210; opacity:0; pointer-events:none;
+  /* R56：与 dock 同配方亮玻璃（透明渐变 + saturate 透光 + 内高光） */
+  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  backdrop-filter:saturate(170%); -webkit-backdrop-filter:saturate(170%);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.7), inset 0 -2px 6px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(255,255,255,.12), 0 14px 38px rgba(0,0,0,.5),
+             0 0 24px color-mix(in srgb, var(--primary) 14%, transparent);
+  transition:opacity .4s ease, transform .4s ease, border-color .3s ease, box-shadow .3s ease;
+  color:rgba(255,255,255,.85);
+}
+#search-box.visible{opacity:1; pointer-events:auto; transform:translateX(-50%) translateY(0)}
+#search-box:hover, #search-box:focus-within{
+  border-color:color-mix(in srgb, var(--accent) 60%, rgba(255,255,255,.35));
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.4), inset 0 -2px 6px rgba(0,0,0,.4),
+             0 0 22px color-mix(in srgb, var(--accent) 26%, transparent), 0 14px 40px rgba(0,0,0,.55);
+}
+#search-box > svg{width:17px; height:17px; flex:none; color:rgba(255,255,255,.5)}
+#search-input{
+  flex:1; min-width:0; background:transparent; border:none; outline:none;
+  color:#fff; font-size:14px; letter-spacing:.3px; font-family:inherit;
+}
+#search-input::placeholder{color:rgba(255,255,255,.38)}
+#search-clear{
+  display:none; width:18px; height:18px; border-radius:50%; border:none;
+  background:rgba(255,255,255,.16); color:rgba(255,255,255,.8);
+  font-size:11px; line-height:1; cursor:pointer; place-items:center; flex:none;
+  transition:background .2s; padding:0;
+}
+#search-clear:hover{background:rgba(255,255,255,.3)}
+#search-box.has-text #search-clear{display:grid}
+/* ═══ R86 · 切换搜索源开关（搜索框内右侧）═══
+   交互复刻 EQ 总开关 .eqp-switch（胶囊 .tk + 圆点 ::after，纯点击切换、不拖）；
+   样式按用户拍板与 EQ 开关**刻意不同**：
+     · 轨道：**完全透明、不加任何底色**（只留一圈极淡玻璃描边界定形态）；
+     · 滑块（圆点）：**渐变填充**（primary→accent），并**像进度条那样发光** ——
+       进度条用「渐变描边 + 多层 blur bloom + drop-shadow」，这里用同族手法：
+       渐变背景 + 多层递减透明度的 box-shadow 光晕 + 一道斜向高光。 */
+.ss-src{
+  display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+  flex:none; user-select:none; line-height:0;
+}
+.ss-src-lb{
+  font-size:10.5px; font-weight:700; letter-spacing:.6px;
+  color:rgba(255,255,255,.62); transition:color .2s; line-height:1;
+  min-width:22px; text-align:right;
+}
+.ss-src:hover .ss-src-lb{ color:rgba(255,255,255,.9) }
+.ss-src input[type=checkbox]{
+  position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+}
+/* 轨道：透明底 + 极淡描边（不填色） */
+.ss-src .tk{
+  position:relative; width:38px; height:21px; flex:none; border-radius:999px;
+  background:transparent; border:1px solid rgba(255,255,255,.26);
+  transition:border-color .22s, box-shadow .22s;
+}
+/* 滑块：渐变 + 多层光晕（进度条同族发光） */
+.ss-src .tk::after{
+  content:''; position:absolute; top:2px; left:2px; width:15px; height:15px;
+  border-radius:50%;
+  background:linear-gradient(135deg,
+             color-mix(in srgb, var(--primary,#6a5cff) 92%, #fff) 0%,
+             var(--accent,#6a5cff) 100%);
+  transition:transform .26s var(--ease-out, cubic-bezier(.16,1,.3,1)),
+             box-shadow .26s, filter .26s;
+  box-shadow:0 0 4px color-mix(in srgb, var(--accent,#6a5cff) 80%, transparent),
+             0 0 10px color-mix(in srgb, var(--accent,#6a5cff) 55%, transparent),
+             0 0 20px color-mix(in srgb, var(--primary,#6a5cff) 38%, transparent);
+  filter:saturate(130%);
+}
+/* 斜向玻璃高光（叠在渐变上，像进度条走过的那道亮） */
+.ss-src .tk::before{
+  content:''; position:absolute; inset:0; border-radius:999px;
+  background:linear-gradient(115deg, transparent 42%,
+             rgba(255,255,255,.55) 50%, transparent 58%);
+  opacity:0; transition:opacity .3s; pointer-events:none;
+}
+.ss-src input:checked + .tk{
+  border-color:color-mix(in srgb, var(--accent,#6a5cff) 55%, rgba(255,255,255,.3));
+  box-shadow:0 0 10px color-mix(in srgb, var(--accent,#6a5cff) 22%, transparent);
+}
+.ss-src input:checked + .tk::before{ opacity:.5 }
+.ss-src input:checked + .tk::after{
+  transform:translateX(17px);
+  box-shadow:0 0 5px color-mix(in srgb, var(--accent,#6a5cff) 92%, transparent),
+             0 0 13px color-mix(in srgb, var(--accent,#6a5cff) 68%, transparent),
+             0 0 26px color-mix(in srgb, var(--primary,#6a5cff) 48%, transparent);
+}
+.ss-src.on .ss-src-lb{ color:color-mix(in srgb, var(--accent,#6a5cff) 80%, #fff) }
+/* 单音源（无从切换）→ 整体压暗不可点，避免"点了没反应" */
+.ss-src.solo{ opacity:.42; cursor:default }
+.ss-src.solo .tk{ border-color:rgba(255,255,255,.14) }
+#search-suggest{
+  position:absolute; left:0; right:0; top:calc(100% + 8px);
+  display:none; flex-direction:column;
+  background:linear-gradient(180deg, rgba(22,19,44,.88), rgba(10,9,22,.92));
+  backdrop-filter:saturate(160%) blur(18px); -webkit-backdrop-filter:saturate(160%) blur(18px);
+  border:1px solid rgba(255,255,255,.14); border-radius:14px; padding:6px;
+  box-shadow:0 18px 44px rgba(0,0,0,.55); overflow:hidden;
+}
+#search-box.show-suggest #search-suggest{display:flex}
+#search-suggest .ss-item{
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:9px;
+  cursor:pointer; color:rgba(255,255,255,.82); font-size:12.5px;
+  transition:background .15s;
+}
+#search-suggest .ss-item:hover,
+#search-suggest .ss-item.cur{background:rgba(255,255,255,.1); color:#fff}
+#search-suggest .ss-item .ss-name{
+  flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#search-suggest .ss-item .ss-artist{
+  color:rgba(255,255,255,.45); font-size:11px; flex:none; margin-left:8px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;
+}
+#search-suggest .ss-empty{
+  padding:10px 12px; color:rgba(255,255,255,.4); font-size:12.5px; cursor:default;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   R57-6 · 左下角按钮柱：设置齿轮 + 换肤衣架（竖向排列，dock 左外侧）
+   老 UI（ui/ai-radio-player.html L244/L251）蓝本：按钮贴在 dock 左缘外侧、
+   垂直与 dock 同心；R57-6 依用户要求从右上收回左下，纵向叠放。
+   垂直基准 = dock 垂直中心（bottom:calc(24px + 88px/2) = 与 88px dock 同心），
+   gear 底边压该中心，hanger 在其正上方 52+14px —— 与 dock 同高的玻璃钮，
+   左右不占 dock / column-panel（left:48px 中部提示）的横向空间。
+   驻留态 = 相对透明 15%（几乎融入背景）；指针靠近按钮本体 + 周边热区
+   （比按钮大一圈的 84px 感应）→ 恢复 .dim 熄灭、正常不透明显示。
+   两个按钮仍是液态玻璃（liquid_glass.js 已注册透镜），hover 高亮。
+   ═══════════════════════════════════════════════════════════════ */
+#settings-gear, #theme-hanger{
+  position:fixed; left:14px; width:52px; height:52px; border-radius:50%;
+  display:grid; place-items:center; z-index:230; cursor:pointer;
+  border:1px solid rgba(255,255,255,.24);
+  background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.04));
+  backdrop-filter:saturate(170%); -webkit-backdrop-filter:saturate(170%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 6px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(255,255,255,.15), 0 12px 30px rgba(0,0,0,.5),
+             0 0 20px color-mix(in srgb, var(--primary) 12%, transparent);
+  color:rgba(255,255,255,.9);
+  /* 驻留透明 .15 —— 无 .dim 时恢复 1（默认值由 JS 触发，CSS 兜底 .dim） */
+  opacity:.15;
+  transition:opacity .5s ease, border-color .3s ease, box-shadow .3s ease,
+             transform .2s var(--ease-outback), background .3s ease;
+}
+/* 指针离开 → 相对透明 15% */
+#settings-gear.dim, #theme-hanger.dim{opacity:.15}
+/* 靠近/悬停 → 复原不透明 */
+#settings-gear:not(.dim), #theme-hanger:not(.dim){opacity:1}
+#settings-gear:hover, #theme-hanger:hover{opacity:1; border-color:rgba(255,255,255,.42)}
+/* ═══ R57-6：左下 dock 左外侧纵向叠放 —— gear 圆心与 dock 垂直中心同心 ═══
+   垂直同心基准：dock bottom:24px + 高 88px → dock 圆心在 bottom:68px。
+   按钮高 52px → bottom:calc(24px + 88px/2 - 52px/2) = 42px 时圆心恰与 dock 同心；
+   hanger 在 gear 上方 14px（52px 直径 + 14px 间隙 = 66px 节距）。 */
+#settings-gear{bottom:calc(24px + 88px/2 - 52px/2)}
+#theme-hanger{bottom:calc(24px + 88px/2 - 52px/2 + 66px)}
+#settings-gear svg, #theme-hanger svg{width:26px; height:26px; color:rgba(255,255,255,.9)}
+#theme-hanger svg{transform-origin:50% 6%}
+#settings-gear:hover, #theme-hanger:hover{
+  border-color:rgba(255,255,255,.42);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.4), inset 0 -2px 6px rgba(0,0,0,.45),
+             0 14px 34px rgba(0,0,0,.6), 0 0 24px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+#theme-hanger:hover svg{animation:hangerSway 2.4s ease-in-out infinite}
+@keyframes hangerSway{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+#settings-gear:hover svg{animation:gearSpin 5s linear infinite}
+@keyframes gearSpin{to{transform:rotate(360deg)}}
+#settings-gear.ui-hidden, #theme-hanger.ui-hidden, #search-box.ui-hidden{display:none !important}
+
+/* ═══════════════════════════════════════════════════════════════
+   R56 · 设置卡 + 换肤卡 共用玻璃抽屉（右缘伸出的大卡）
+   · 两张卡共用 .set-* 内部样式（#settings-panel .set-row 等选择器）
+   · 卡片默认右移出屏（translateX(105%)），.open 滑入；
+     body.drawer-open 提供主界面左推透视。
+   · z 序：抽屉 300（盖过 dock 200 / 卡片架 1，低于 toast 500）
+   ═══════════════════════════════════════════════════════════════ */
+#settings-panel, #theme-panel{
+  position:fixed; top:0; right:0; width:min(400px, 94vw); height:100%;
+  z-index:300;
+  background:linear-gradient(180deg, rgba(24,20,46,.66), rgba(10,9,22,.78));
+  backdrop-filter:saturate(160%) blur(22px); -webkit-backdrop-filter:saturate(160%) blur(22px);
+  border-left:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.5), inset 0 -2px 6px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(255,255,255,.08), -28px 0 70px rgba(0,0,0,.55);
+  transform:translateX(105%);
+  display:flex; flex-direction:column; will-change:transform;
+  opacity:0; pointer-events:none;
+}
+#settings-panel.open, #theme-panel.open{
+  transform:translateX(0); opacity:1; pointer-events:auto;
+}
+#settings-panel .set-head, #theme-panel .set-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 22px 14px; border-bottom:1px solid rgba(255,255,255,.08);
+}
+#settings-panel .set-head h3, #theme-panel .set-head h3{
+  font-size:18px; font-weight:800; color:#fff; letter-spacing:.5px; margin:0;
+}
+#settings-panel .set-close, #theme-panel .set-close{
+  width:30px; height:30px; border-radius:50%; border:none;
+  background:rgba(255,255,255,.08); display:grid; place-items:center;
+  color:rgba(255,255,255,.7); cursor:pointer;
+  transition:background .2s, transform .2s var(--ease-outback);
+}
+#settings-panel .set-close:hover, #theme-panel .set-close:hover{
+  background:rgba(255,255,255,.16); color:#fff; transform:rotate(90deg);
+}
+#settings-panel .set-close svg, #theme-panel .set-close svg{width:15px; height:15px}
+#settings-panel .set-body, #theme-panel .set-body{
+  flex:1; overflow-y:auto; padding:6px 22px 28px;
+}
+/* ═══ R67-2：设置页 4 tab 切换（AI / TTS / 音源 / 通用）═══
+   取代原纵向 section 堆叠：4 tab 顶部平铺，点切一次只显示一个 tab 的内容。
+   tab 切换不改 .set-body 的 overflow:hidden —— 各 .stab-panel 自身有 max-height + overflow。
+   只在 #settings-panel 用，#theme-panel 不需要。 */
+#settings-panel .set-tabs{
+  display:flex; gap:4px; padding:0 22px; margin:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  position:sticky; top:0; z-index:2; background:rgba(20,18,40,.6); backdrop-filter:blur(14px);
+}
+#settings-panel .stab{
+  flex:1; height:42px; padding:0 8px; border:0; background:transparent; color:rgba(255,255,255,.5);
+  font-size:13px; font-weight:500; letter-spacing:.5px; cursor:pointer;
+  border-bottom:2px solid transparent; transition:color .2s, border-color .2s;
+}
+#settings-panel .stab:hover{color:rgba(255,255,255,.85)}
+#settings-panel .stab.active{
+  color:#fff; border-bottom-color:var(--accent,#a99bff);
+}
+#settings-panel .stab-panel{display:none; padding:0 22px}
+#settings-panel .stab-panel.active{display:block}
+#settings-panel .stab-panel .set-group:first-child{margin-top:14px}
+#settings-panel .set-group, #theme-panel .set-group{margin-top:20px}
+#settings-panel .set-group h4, #theme-panel .set-group h4{
+  font-size:12px; letter-spacing:2px; color:rgba(255,255,255,.5);
+  font-weight:700; margin-bottom:12px; text-transform:uppercase;
+}
+/* ═══ R62 #8：设置分组可折叠（移植老 UI L363-368 .set-group.collapsed）═══
+   点 h4 折叠/展开整组；「不喜欢的音乐」默认折叠（内容通常很多，会撑爆设置卡）。 */
+#settings-panel .set-group[data-foldable] > h4, #theme-panel .set-group[data-foldable] > h4{
+  cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px;
+}
+#settings-panel .set-group[data-foldable] > h4::before, #theme-panel .set-group[data-foldable] > h4::before{
+  content:'▾'; width:12px; flex:none; font-size:10px; color:rgba(255,255,255,.4);
+  transition:transform .25s var(--ease-out);
+}
+#settings-panel .set-group[data-foldable].collapsed > h4::before,
+#theme-panel .set-group[data-foldable].collapsed > h4::before{transform:rotate(-90deg)}
+#settings-panel .set-group[data-foldable].collapsed > *:not(h4),
+#theme-panel .set-group[data-foldable].collapsed > *:not(h4){display:none}
+#settings-panel .set-group[data-foldable].collapsed > h4,
+#theme-panel .set-group[data-foldable].collapsed > h4{margin-bottom:6px}
+#settings-panel .set-row, #theme-panel .set-row{
+  display:flex; align-items:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+}
+#settings-panel .set-label, #theme-panel .set-label{font-size:13px; color:rgba(255,255,255,.6); width:100%}
+#settings-panel .set-hint, #theme-panel .set-hint{font-size:11.5px; color:rgba(255,255,255,.32); line-height:1.5; margin:-2px 0 8px}
+#settings-panel .set-sub, #theme-panel .set-sub{font-size:12.5px; color:rgba(255,255,255,.55)}
+/* ═══ R64：个性化设置控件行（移植老 UI L376-399 · AI/TTS/音源/通用）═══
+   老 UI 的 .fx-* 系列（select / range / text / password / textarea / 按钮 / 小标题）
+   逐条搬过来，仅把颜色变量换成新架构的 --accent。 */
+#settings-panel .fx-select-row, #settings-panel .fx-text-row,
+#settings-panel .fx-pass-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#settings-panel .fx-select-row select,
+#settings-panel .fx-text-row input[type=text],
+#settings-panel .fx-pass-row input[type=password]{
+  flex:1; min-width:0; background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.13); border-radius:9px;
+  color:rgba(255,255,255,.88); font-size:12.5px; padding:6px 10px; outline:none;
+}
+#settings-panel .fx-select-row select:focus,
+#settings-panel .fx-text-row input[type=text]:focus,
+#settings-panel .fx-pass-row input[type=password]:focus{
+  border-color:color-mix(in srgb, var(--accent, #6a5cff) 55%, transparent);
+}
+#settings-panel .fx-select-row select option{background:#181630;color:#fff}
+#settings-panel .fx-select-row .ft-label,
+#settings-panel .fx-text-row .ft-label,
+#settings-panel .fx-pass-row .ft-label{
+  flex:none; font-size:12.5px; color:rgba(255,255,255,.78); white-space:nowrap;
+}
+#settings-panel .fx-range-row{margin-bottom:12px}
+#settings-panel .fx-range-row .ft-label{
+  display:flex; justify-content:space-between; font-size:12.5px;
+  color:rgba(255,255,255,.78); margin-bottom:5px;
+}
+#settings-panel .fx-range-row .ft-label b{color:var(--accent,#6a5cff);font-weight:700}
+#settings-panel .fx-range-row input[type=range]{
+  width:100%; accent-color:var(--accent,#6a5cff); height:18px; cursor:pointer;
+}
+#settings-panel .fx-clear{
+  flex:none; width:22px; height:22px; border-radius:7px;
+  border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.6); font-size:12px; cursor:pointer; transition:.2s;
+}
+#settings-panel .fx-clear:hover{color:#ff8d8d;border-color:#ff6b6b}
+#settings-panel .fx-area-row{margin-bottom:12px}
+#settings-panel .fx-area-row .ft-label{
+  display:block; font-size:12.5px; color:rgba(255,255,255,.78); margin-bottom:6px;
+}
+#settings-panel .fx-area-row textarea{
+  width:100%; box-sizing:border-box; resize:vertical; font-family:inherit;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.13);
+  border-radius:9px; color:rgba(255,255,255,.88); font-size:12.5px;
+  padding:8px 10px; outline:none; line-height:1.6;
+}
+#settings-panel .fx-area-row textarea:focus{
+  border-color:color-mix(in srgb, var(--accent, #6a5cff) 55%, transparent);
+}
+#settings-panel .fx-btn-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#settings-panel .fx-btn{flex:none}
+#settings-panel .fx-btn-status{
+  font-size:11.5px; color:rgba(255,255,255,.45); line-height:1.5; word-break:break-all;
+}
+#settings-panel .fx-subhead{
+  margin:6px 0 10px; font-size:11px; letter-spacing:1.5px;
+  color:rgba(255,255,255,.38); font-weight:700; padding-bottom:6px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+/* 组内「高级选项」折叠（老 UI L369-375 .set-fold）—— 与整组折叠并存：
+   整组折叠点 h4（data-foldable），高级项折叠点 .set-fold-head（data-fold）。 */
+#settings-panel .set-fold{margin-top:4px}
+#settings-panel .set-fold-head{
+  display:flex; align-items:center; gap:8px; font-size:11.5px;
+  color:rgba(255,255,255,.55); cursor:pointer; user-select:none;
+  padding:7px 10px; border-radius:10px; background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.08); transition:background .2s;
+}
+#settings-panel .set-fold-head:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.75)}
+#settings-panel .set-fold-head::before{
+  content:'\25B8'; font-size:10px; color:rgba(255,255,255,.4);
+  transition:transform .25s var(--ease-out);
+}
+#settings-panel .set-fold.open > .set-fold-head::before{transform:rotate(90deg)}
+#settings-panel .set-fold-body{display:none;padding:4px 2px 2px}
+#settings-panel .set-fold.open > .set-fold-body{display:block}
+/* 开关（老 UI .fx-toggle / .tk）。新架构 .set-switch 已有同款，这里补 fx- 别名 */
+#settings-panel .fx-toggle{
+  display:flex; align-items:center; gap:9px; margin-bottom:12px; cursor:pointer;
+  font-size:12.5px; color:rgba(255,255,255,.78);
+}
+#settings-panel .fx-toggle input{display:none}
+#settings-panel .fx-toggle .tk{
+  position:relative; flex:none; width:36px; height:20px; border-radius:999px;
+  background:rgba(255,255,255,.14); transition:background .22s;
+}
+#settings-panel .fx-toggle .tk::after{
+  content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+  border-radius:50%; background:#fff; transition:transform .22s var(--ease-out);
+}
+#settings-panel .fx-toggle input:checked + .tk{background:var(--accent,#6a5cff)}
+#settings-panel .fx-toggle input:checked + .tk::after{transform:translateX(16px)}
+/* 扫码登录弹层（老 UI L400-412） */
+#qr-modal{
+  position:fixed; inset:0; z-index:400; background:rgba(5,4,13,.55);
+  display:none; align-items:center; justify-content:center;
+}
+#qr-modal.open{display:flex}
+#qr-modal .qr-card{
+  width:300px; border-radius:20px; background:rgba(20,18,40,.92);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.14); box-shadow:0 24px 64px rgba(0,0,0,.6);
+  padding:18px; text-align:center;
+}
+#qr-modal .qr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+#qr-title{font-size:14px;font-weight:700;color:rgba(255,255,255,.9)}
+#qr-close{
+  width:26px; height:26px; border-radius:8px; border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.06); color:rgba(255,255,255,.7); cursor:pointer; font-size:13px;
+}
+#qr-close:hover{color:#ff8d8d;border-color:#ff6b6b}
+#qr-img{
+  width:220px; height:220px; max-width:100%; object-fit:contain;
+  border-radius:10px; background:#fff; margin:0 auto 12px;
+}
+/* 源图已由后端统一为 480×480 白底 PNG（_qr_fixed_png），平滑下采样即可 */
+#qr-status{font-size:12px;color:rgba(255,255,255,.6);line-height:1.5}
+/* R67-2：原「外观」section 的 CSS（#open-theme-panel 按钮 + appeal 组底色）随
+   整个 section 一并删除 —— 用户原话"皮肤界面在换肤按钮里，设置页保留=冗余"。 */
+
+/* 皮肤卡片网格 */
+#settings-panel .skin-list, #theme-panel .skin-list{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%;
+}
+#settings-panel .skin-card, #theme-panel .skin-card{
+  border-radius:14px; overflow:hidden; cursor:pointer;
+  border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05);
+  transition:border-color .2s, box-shadow .2s, transform .2s var(--ease-outback);
+  position:relative;
+}
+#settings-panel .skin-card:hover, #theme-panel .skin-card:hover{
+  border-color:rgba(255,255,255,.32); transform:translateY(-2px);
+}
+#settings-panel .skin-card.active, #theme-panel .skin-card.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent), 0 8px 24px rgba(0,0,0,.4);
+}
+#settings-panel .skin-card .sc-prev, #theme-panel .skin-card .sc-prev{
+  height:62px; background-size:cover; background-position:center;
+}
+#settings-panel .skin-card .sc-name, #theme-panel .skin-card .sc-name{
+  font-size:12px; color:#fff; padding:8px 10px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+/* 高亮色行 */
+#settings-panel .set-accent-row, #theme-panel .set-accent-row{
+  justify-content:flex-start; gap:10px; margin-top:2px;
+}
+#fx-accent-picker{
+  width:38px; height:30px; border:none; border-radius:8px; background:transparent;
+  cursor:pointer; padding:0;
+}
+#fx-accent-picker::-webkit-color-swatch-wrapper{padding:2px}
+#fx-accent-picker::-webkit-color-swatch{border-radius:6px; border:1px solid rgba(255,255,255,.25)}
+
+/* 背景模式按钮（老 .wp-type）+ 壁纸导入（老 .wp-type-row） */
+#theme-panel .wp-type{
+  padding:7px 14px; border-radius:11px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.7); font-size:13px; cursor:pointer;
+  transition:background .2s, color .2s, border-color .2s;
+}
+#theme-panel .wp-type:hover{background:rgba(255,255,255,.12); color:#fff}
+#theme-panel .wp-type.active{
+  background:color-mix(in srgb, var(--primary) 30%, transparent);
+  border-color:var(--primary); color:#fff;
+}
+
+/* ═══ R93 · 叠层效果（on-top effect）参数区 ═══
+   换肤卡新增「叠层效果」row（分段卡 n 选一，复用 .wp-type —— 与「背景效果」如出一辙）；
+   选中「水面」时下方 #water-opts 展开（P4 :107 契约：每个 ontop 插件自带 1 个参数组）。
+   参数行 = label 左 / 控件右（wo-row）；滑块配方取自 #rs-slider（白圆点 + 细轨道）。 */
+#theme-panel #water-opts{display:none}
+#theme-panel #water-opts.open{display:block}
+#theme-panel .wo-grp{margin:2px 0 10px; padding:10px 12px; border-radius:12px;
+  background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07)}
+#theme-panel .wo-grp > h5{margin:0 0 9px; font-size:12px; font-weight:500;
+  color:rgba(255,255,255,.5); letter-spacing:.6px}
+#theme-panel .wo-row{display:flex; align-items:center; gap:10px; margin-bottom:9px}
+#theme-panel .wo-row:last-child{margin-bottom:0}
+#theme-panel .wo-row .set-label{width:auto; flex:1; min-width:0}
+#theme-panel .wo-range{width:96px; flex:none; height:4px; -webkit-appearance:none; appearance:none;
+  background:rgba(255,255,255,.16); border-radius:2px; outline:none; cursor:pointer; margin:0}
+#theme-panel .wo-range::-webkit-slider-thumb{width:13px; height:13px; border-radius:50%; background:#fff;
+  border:1px solid rgba(255,255,255,.75); box-shadow:0 0 7px rgba(0,0,0,.45); cursor:pointer;
+  -webkit-appearance:none}
+#theme-panel .wo-range::-moz-range-thumb{width:13px; height:13px; border-radius:50%; background:#fff;
+  border:1px solid rgba(255,255,255,.75); box-shadow:0 0 7px rgba(0,0,0,.45); cursor:pointer}
+#theme-panel .wo-range:disabled{opacity:.3; cursor:not-allowed}
+#theme-panel .wo-val{flex:none; min-width:36px; text-align:right; font-size:11.5px;
+  color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums}
+#theme-panel .wo-tag{flex:none; font-size:10.5px; padding:2px 7px; border-radius:7px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.45)}
+#theme-panel .wo-seg{display:inline-flex; gap:6px; flex:none}
+#theme-panel .wo-seg .wp-type{padding:5px 11px; font-size:12px; border-radius:9px}
+#theme-panel .wo-adv-btn{display:flex; align-items:center; gap:6px; width:100%;
+  background:none; border:none; padding:2px 0 8px; cursor:pointer; font-family:inherit;
+  font-size:12px; color:rgba(255,255,255,.45)}
+#theme-panel .wo-adv-btn:hover{color:rgba(255,255,255,.75)}
+#theme-panel .wo-adv .wo-caret{display:inline-block; transition:transform .2s var(--ease-outback)}
+#theme-panel .wo-adv.open .wo-caret{transform:rotate(90deg)}
+#theme-panel .wo-adv-body{display:none}
+#theme-panel .wo-adv.open .wo-adv-body{display:block}
+#theme-panel .wo-btns{display:flex; gap:8px; margin-top:2px}
+/* R66：#wp-input / .wp-import-btn 的单卡旧规则已废弃，改由下方「双卡统一」规则接管 */
+
+/* ═══ R66：设置卡 / 换肤卡 控件统一（同一套配方，两卡观感一致）═══
+   原 R63「我的壁纸」网格样式已随功能整体移除（用户判定与上方「自定义壁纸」冗余）。
+
+   ⚠ 修了一个真实缺陷：`.wp-import-btn` 的样式原先**只写在 #theme-panel 下**，
+     而设置卡「本地曲库」的「导入文件夹」按钮也用这个 class → 在设置卡里是
+     **完全没有样式的裸 button**（就是这个"按钮不好看"的直接原因）。
+   现在按钮 / 输入栏统一用 `#settings-panel, #theme-panel` 双前缀，
+   且 `.set-mini-btn` 去掉了原来"悬停变红"的告警配色（它现在是普通操作按钮）。 */
+#settings-panel .set-input, #theme-panel .set-input{
+  flex:1; min-width:0; height:38px; padding:0 14px; border-radius:11px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  color:#fff; font-size:13px; outline:none; transition:border-color .2s;
+}
+#settings-panel .set-input:focus, #theme-panel .set-input:focus{
+  border-color:color-mix(in srgb, var(--accent) 60%, transparent);
+}
+#settings-panel .set-input::placeholder, #theme-panel .set-input::placeholder{
+  color:rgba(255,255,255,.3);
+}
+#settings-panel .set-wallpaper-input, #theme-panel .set-wallpaper-input{flex-wrap:nowrap}
+/* 主操作：实心渐变（导入 / 选择文件） */
+#settings-panel .wp-import-btn, #theme-panel .wp-import-btn{
+  height:38px; padding:0 18px; border-radius:11px; border:none; flex:none;
+  background:linear-gradient(180deg, var(--primary), color-mix(in srgb, var(--primary) 70%, #000));
+  color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+  transition:filter .2s, transform .15s var(--ease-outback);
+}
+#settings-panel .wp-import-btn:hover, #theme-panel .wp-import-btn:hover{filter:brightness(1.12)}
+#settings-panel .wp-import-btn:active, #theme-panel .wp-import-btn:active{transform:scale(.96)}
+/* 次操作：描边玻璃（打开换肤面板 / 重新扫描 / 各类测试按钮） */
+#settings-panel .set-mini-btn, #theme-panel .set-mini-btn{
+  height:34px; padding:0 15px; border-radius:11px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+  color:rgba(255,255,255,.82); font-size:12.5px; cursor:pointer;
+  transition:background .2s, color .2s, border-color .2s, transform .15s var(--ease-outback);
+}
+#settings-panel .set-mini-btn:hover, #theme-panel .set-mini-btn:hover{
+  background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.24); color:#fff;
+}
+#settings-panel .set-mini-btn:active, #theme-panel .set-mini-btn:active{transform:scale(.96)}
+
+/* 开关（音频律动等）—— 移植老 UI .fx-toggle L354-360 同款配方 */
+#theme-panel .set-switch{display:inline-flex; align-items:center; cursor:pointer; user-select:none; line-height:0}
+#theme-panel .set-switch .tk{position:relative; width:34px; height:19px; flex:none; border-radius:11px;
+  background:rgba(255,255,255,.14); transition:background .25s; box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+#theme-panel .set-switch .tk::after{content:''; position:absolute; left:2px; top:2px; width:15px; height:15px;
+  border-radius:50%; background:#fff; transition:transform .25s var(--ease-outback); box-shadow:0 1px 4px rgba(0,0,0,.4)}
+#theme-panel .set-switch input{display:none}
+#theme-panel .set-switch input:checked + .tk{background:var(--accent, #6a5cff)}
+#theme-panel .set-switch input:checked + .tk::after{transform:translateX(15px)}
+
+/* 不喜欢的音乐列表 */
+#settings-panel .dislike-list{
+  display:flex; flex-direction:column; gap:4px; max-height:300px; overflow-y:auto;
+}
+#settings-panel .dislike-list .dl-empty{
+  padding:12px 4px; color:rgba(255,255,255,.4); font-size:12.5px; text-align:center;
+}
+#settings-panel .dislike-list .dl-row{
+  display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:10px;
+  background:rgba(255,255,255,.04); transition:background .15s;
+}
+#settings-panel .dislike-list .dl-row:hover{background:rgba(255,255,255,.09)}
+#settings-panel .dislike-list .dl-name{
+  flex:1; min-width:0; font-size:12.5px; color:rgba(255,255,255,.85);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#settings-panel .dislike-list .dl-artist{
+  font-size:11px; color:rgba(255,255,255,.42); flex:none;
+  max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#settings-panel .dislike-list .dl-rm{
+  width:22px; height:22px; border-radius:7px; border:none; background:transparent;
+  color:rgba(255,255,255,.4); font-size:13px; cursor:pointer; flex:none;
+  display:grid; place-items:center; transition:background .15s, color .15s;
+}
+#settings-panel .dislike-list .dl-rm:hover{background:rgba(255,255,255,.14); color:#ff6b6b}
+/* ═══ R57-1 / R59：背景模式语义 —— 已并入 #bgimg 规则（见上）。
+   海报画布透明只画字；#bgimg（封面/自定义壁纸/默认皮肤）承担全部背景内容。 */
+</style>
+</head>
+<body data-page-node-id="FYtGGFaASyQBlQ6IbQ7oQy">
+<!-- ═══ R60 背景三层最终模型（用户拍板）═══
+     自下而上：
+       [皮肤层]  #bgimg = 皮肤内容位：当前封面 / 自定义壁纸 / 程序化默认皮肤
+                #poster-canvas = 歌词海报文字层（歌词/曲名/歌手，透明画布）
+                #bg = 主题渐变缺省底（皮肤为空时露出）
+       [效果层]  bgmode=poster「无效果」| acrylic「亚克力」（R61 文案去「（锐利）」后缀）
+                —— 对整层皮肤做效果：锐利=直出；acrylic=明亮 blur
+       [UI 层]   歌词文字 / column / dock / 口播栏 / 提示气泡 / 抽屉 …
+                全部在效果层之上（液态玻璃 = 效果层上再叠的折射效果）
+     wp-active 只负责「切歌不被封面覆盖」，不再压掉 acrylic blur。 -->
+
+<div id="bg">
+  <img id="bgimg" alt="">
+  <!-- ═══ R62 #10：视频壁纸（皮肤内容位第二候选）═══
+       #bgimg 与 #bgvideo 互斥显示：applyWallpaperVideo() 显示 video、隐藏 img；
+       切回封面/图片/链接壁纸 → 反向。与 #bgimg 共用同一套皮肤层布局规则
+       （#bg 内 absolute 铺满），acrylic 效果对 video 同样生效。 -->
+  <video id="bgvideo" muted loop playsinline autoplay preload="auto"></video>
+  <canvas id="poster-canvas"></canvas>
+  <canvas id="bgliquid"></canvas>
+  <!-- ═══ R70：Emotional Water 水面（on-top 层，详见 CSS #water 注释）═══ -->
+  <canvas id="water"></canvas>
+</div>
+
+<!-- ═══ R105 / E-α：致敬老区（彩虹发丝线 · 声明；诗卡/鸡/Hello 转 demo-only；Python/Linux 致敬仅计划文档）═══ -->
+<style>
+/* Apple 1977 六色彩虹发丝线（致敬，恒定出现在换肤卡最顶，极克制） */
+.eggs-rainbow{height:3px;width:100%;margin-top:14px;flex:0 0 auto;
+  background:linear-gradient(90deg,#61BB46 0 16.66%,#F9C00C 16.66% 33.33%,#F5821F 33.33% 50%,#E03A3C 50% 66.66%,#963D97 66.66% 83.33%,#009DDC 83.33% 100%)}
+/* 关于 / 声明 区块（纯静态，ui-settings.js 不接管此 gid）—— 居中页脚致敬 */
+.eggs-declaration{margin-top:14px;font-family:-apple-system,system-ui,sans-serif;font-size:12px;line-height:1.9;opacity:.74;text-align:center;letter-spacing:.01em}
+.eggs-declaration p{margin:0}
+.eggs-declaration .eggs-viva{margin-top:6px;opacity:.92;font-style:italic}
+/* 隐藏档案页（秘密入口：__eggs.archive()） */
+#eggs-archive{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(8,10,20,.82);backdrop-filter:blur(8px);overflow:auto;padding:40px}
+#eggs-archive.show{display:flex}
+.eggs-archive-card{max-width:780px;width:100%;color:rgba(232,230,242,.9);font-family:-apple-system,system-ui,sans-serif;font-size:14px;line-height:1.8}
+.eggs-archive-card h2{font-size:18px;margin:0 0 4px;color:#fff;letter-spacing:.04em}
+.eggs-archive-card h3{font-size:14px;margin:22px 0 6px;color:rgba(255,255,255,.92);border-left:3px solid rgba(120,160,255,.6);padding-left:10px}
+.eggs-archive-card table{width:100%;border-collapse:collapse;margin:6px 0;font-size:13px}
+.eggs-archive-card th,.eggs-archive-card td{border:1px solid rgba(255,255,255,.14);padding:6px 8px;text-align:left;vertical-align:top}
+.eggs-archive-card th{background:rgba(255,255,255,.06)}
+.eggs-archive-card .muted{opacity:.6;font-size:12px}
+.eggs-archive-close{position:fixed;top:18px;right:24px;color:rgba(255,255,255,.8);font-size:26px;cursor:pointer;pointer-events:auto;line-height:1}
+</style>
+<div id="eggs-archive" aria-hidden="true"><span class="eggs-archive-close" id="eggs-archive-close">×</span><div class="eggs-archive-card" id="eggs-archive-card"></div></div>
+
+<!-- ═══ R55：顶部自检条（HTTP/WS 连接状态 + 调试 tabs）已移除 ═══
+     连接健康改由 WS 心跳 / console 承担，不再占一整条顶部 UI。 -->
+
+
+<!-- AI 口播栏（原 UI L796-801）：玻璃卡 + 思考圈；R55 去掉装饰引号 -->
+<div id="aibar">
+  <div id="ai-text"></div>
+  <span id="ai-bar-think" title="AI 思考中…"></span>
+</div>
+
+<!-- Phase 3：推荐货架 / 队列卡片（沿用原 .scard 配方） -->
+<div id="cards" data-page-node-id="Zgqikc2TKJJqtcq9CCZgXs"><div class="empty" data-page-node-id="BscYCYZGRvRcRWAAA5IgGJ">暂无内容</div></div>
+
+<!-- ═══ Orbit 导航（漫游/收藏/歌单，三按钮在 R1 圆弧上轮转）═══
+     原 ui/ai-radio-player.html L748-755。容器零尺寸定位锚点，
+     隐藏方式：原位透明度 .8 ↔ .show 1（**不位移**按钮，否则脱离圆弧）。
+     触发区：以 O 为圆心、R2 = R1+99 为半径的圆弧区。 -->
+<div id="orbits" data-page-node-id="TUWCVW8M5AwaFiv1HwklrA">
+  <!-- 漫游：罗盘 compass -->
+  <div class="orbit" id="o-wander" data-mode="wander" title="漫游" data-page-node-id="Rmm6D0Pd8GD35Q607YrC6E">
+    <span class="ring" data-page-node-id="ngDWWJKtu4P5lNeGw5h65C"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="qLxBlzbCYAOccaNN1bzS59"><circle cx="12" cy="12" r="10" data-page-node-id="EaOwrXxavSRPBF0sNelxpx"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" data-page-node-id="I5gvtSUnSGRDZYXl4Bze7c"/></svg>
+  </div>
+  <!-- 收藏：心形 heart（已废弃作为功能入口，仍保留为视觉对称） -->
+  <div class="orbit" id="o-fav" data-mode="fav" title="收藏" data-page-node-id="4uBQAQbV5k1OHAM3FgBGMn">
+    <span class="ring" data-page-node-id="9A7HHoiuVr73AbHBwJ5wZB"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="puEQErUA6zl6LBPc4u5K03"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" data-page-node-id="1RjrxeBFfwPczTYQNckv2y"/></svg>
+  </div>
+  <!-- 歌单：音乐列表 list-music -->
+  <div class="orbit" id="o-playlist" data-mode="plist" title="歌单" data-page-node-id="E6cLarNXKCAYIXEgJD9R8I">
+    <span class="ring" data-page-node-id="CgUZpnF12Wrnu2BeutSAd1"></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="sdcfHTst3RzCHj16npI3Th"><path d="M21 15V6" data-page-node-id="y10VDKwWPrSUBpQI4IdTR9"/><path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" data-page-node-id="ZeByoxMSVbvYHjcFhknQ6K"/><path d="M12 12H3" data-page-node-id="nnZEypODyQIJUG1PRykVKa"/><path d="M16 6H3" data-page-node-id="GdFidNrnDtDA7Q7i21AUAz"/><path d="M12 18H3" data-page-node-id="GbarBwOQfcjKDvRB99Lp1G"/></svg>
+    <span class="badge" id="o-playlist-badge" style="display:none" data-page-node-id="MKTQGZHC33IaFeGsV4aBvQ">0</span>
+  </div>
+</div>
+
+<!-- ═══ 栏目面板（左上角 KICKER/标题/副标题 + 操作胶囊 + 音源切换 tabs）═══
+     原 ui/ai-radio-player.html L763-789。空闲时显示，播放中+指针离开热区则淡出。 -->
+<div id="column-panel" data-page-node-id="wHqFwuQnPNBYUvWQXdqJ6X">
+  <div id="column-head" data-page-node-id="TiIaeS0ys5yFvDIVDE0ep7">
+    <div class="ch-kicker" id="ch-kicker" data-page-node-id="fTfAXlx32pc8LeIV38Yhgl">RADIO · 漫游</div>
+    <div class="ch-title"  id="ch-title" data-page-node-id="Kv0O0h1gbRL5ZbWzWgSbq6">星际漫游</div>
+    <div class="ch-sub"    id="ch-sub" data-page-node-id="ASiwFwW270CvCN936qMJvs">待播 0 首</div>
+    <div class="ch-rule" data-page-node-id="liT8BWfAm8uRwqB9O4duOs"></div>
+    <div class="ch-chips" data-page-node-id="uJVCT7Khe8j55cXOUc52TC">
+      <button id="col-playall" class="ch-chip" style="display:none" title="播放全部" data-page-node-id="r581SxuBEaEL33Den5HHEP">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="1TTtV82RNFjfSoze6dY0da"><path d="M8 5v14l11-7z" data-page-node-id="wC4HokkdpcSm5wKYe7QCFu"/></svg>
+        <span class="pmc-tx" data-page-node-id="lbxKfARnXoAXsS7SqM0tUq">播放全部</span>
+      </button>
+    </div>
+    <!-- 音源切换 tabs：仅 plist 栏目显示（原 UI L785-789） -->
+    <div id="plist-src" style="display:none" data-page-node-id="NjHhCNVtLneZ7yYow4f5Fu">
+      <button data-s="" class="on" title="全部音源" data-page-node-id="zGTAwmMCFsQzRJUcIW5Gle">全部</button>
+      <button data-s="qqmusic" title="仅 QQ 音乐" data-page-node-id="Ftr6UF3ZGAgSmycukM5KtW">QQ</button>
+      <button data-s="netease" title="仅网易云" data-page-node-id="LfnB5cgAYZWPgWU7uXlNKd">网易</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 侧边面板（队列/曲库/历史 三 tab + 行操作）═══
+     原 ui/ai-radio-player.html L533-577 / L3130-3333。
+     三个 tab 由 #d-history/#d-queue 触发；library 在面板面板内点开。 -->
+<div id="side-panel" data-page-node-id="DM8zynoU6eFklMKnf5Zd5p">
+  <div class="sp-head" data-page-node-id="F8l2VPeBf5CiitI5kRKWmV">
+    <div class="sp-title" id="sp-title" data-page-node-id="1go0pZ28sifkK36h7zw2qk">播放列表</div>
+    <button class="sp-pa" id="sp-playall" title="播放该歌单全部曲目" style="display:none" data-page-node-id="r581SxuBEaEL33Den5HHEP">
+      <svg viewBox="0 0 24 24" fill="currentColor" data-page-node-id="1TTtV82RNFjfSoze6dY0da"><path d="M8 5v14l11-7z" data-page-node-id="wC4HokkdpcSm5wKYe7QCFu"/></svg>
+      <span data-page-node-id="lbxKfARnXoAXsS7SqM0tUq">播放全部</span>
+    </button>
+    <button class="sp-close" id="sp-close" title="关闭" data-page-node-id="IyvG4Jf0m2MoctsymbcF0S">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="TbzYSLFn3rr14P3OfeUxxc"><path d="M6 6l12 12M18 6l-12 12" data-page-node-id="nqttm4ZEXnMAu2NjEVGz6k"/></svg>
+    </button>
+  </div>
+  <div class="sp-body" id="sp-body" data-page-node-id="0vykRstYc2cF4QIGorQ6Ts"><div class="sp-empty" data-page-node-id="BoYwG70HL4M87Giyecuvzq">listening…</div></div>
+</div>
+
+<div id="dock" data-page-node-id="rnWB4gtYXjuzqkPiHHRLJR">
+  <div id="dock-hit" style="position:absolute;inset:-12px -10px;border-radius:calc(88px * .45 + 12px);z-index:0;pointer-events:auto" data-page-node-id="sLDh637tv5PVDCbDVyuanQ"></div>
+  <svg class="dock-noise" viewBox="0 0 300 40" preserveAspectRatio="none" aria-hidden="true" data-page-node-id="wVM0xinA5cEE733YMinX7s">
+    <filter id="noiseF" data-page-node-id="cJ2FABdzeAYxM0DLVBKy7w"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch" data-page-node-id="eJOW6y7mkJkqxDtRsGcGMQ"/><feColorMatrix type="saturate" values="0" data-page-node-id="QqFlnJZ75XKB8IFDuSqkYc"/></filter>
+    <rect width="100%" height="100%" filter="url(#noiseF)" data-page-node-id="0oXd3XV1sR7CnAHCBsHeIC"/>
+  </svg>
+
+  <!-- 外围环绕进度（路径由 computeFramePath 生成） -->
+  <svg id="frame-svg" aria-hidden="true" data-page-node-id="q5mXxaWQkA4Rf06NokuZJJ">
+    <defs data-page-node-id="edUUbnOUftH97YNzidkW0X">
+      <!-- ⚠ gradientUnits="userSpaceOnUse" 必须有：默认 objectBoundingBox 会让
+           渐变沿路径包围盒拉伸，方向/范围都不对（原 UI L722 同款写法） -->
+      <linearGradient id="frameGrad" x1="0" y1="1" x2="1" y2="1" gradientUnits="userSpaceOnUse" data-page-node-id="IoB0AGDCokXlNy4xQjIned">
+        <stop offset="0" stop-color="var(--primary)" data-page-node-id="mdcZBcz5hxw8zewmMAOjjS"/>
+        <stop offset="1" stop-color="var(--accent)" data-page-node-id="0dXaVeu6NG0Zrgxj7rZLeE"/>
+      </linearGradient>
+      <linearGradient id="frameGlowGrad" x1="0" y1="1" x2="1" y2="1" gradientUnits="userSpaceOnUse" data-page-node-id="iOr8FfKCh8x1Bh7JqTcABt">
+        <stop offset="0"   stop-color="rgba(255,255,255,0)" data-page-node-id="JJaIAX1EGEIKuDfDdwMU8D"/>
+        <stop offset=".25" stop-color="rgba(255,255,255,.55)" data-page-node-id="wq40ZC58BkFgz5WS0dVR3A"/>
+        <stop offset=".5"  stop-color="rgba(255,255,255,.9)" data-page-node-id="iVGGmda1KJ4QJNeBRSCW1y"/>
+        <stop offset=".75" stop-color="rgba(255,255,255,.55)" data-page-node-id="XxcsLntSsXX0skAAMo5qjW"/>
+        <stop offset="1"   stop-color="rgba(255,255,255,0)" data-page-node-id="WGA7Ypo48xrXZaAZLWyYou"/>
+      </linearGradient>
+    </defs>
+    <path id="frame-bloom2" d="" data-page-node-id="F4BDzSHE4hGVKGxTt1g4jd"/><path id="frame-bloom" d="" data-page-node-id="EY3xjnPXZDGqUDcH3k7wRn"/>
+    <path id="frame-path" d="" data-page-node-id="IVEIkoKdgVfyKFWwMcQ3bu"/><path id="frame-progress" d="" data-page-node-id="1OrEeRzEYyGAdb0cT5l5yi"/>
+    <path id="frame-glow" d="" data-page-node-id="ZP6h368HDY6p21BGMwYnwY"/>
+    <circle id="frame-playhead" r="8" cx="0" cy="0" data-page-node-id="YGFoBA37idOLeEvu62mZQh"/>
+    <circle id="frame-playhead-core" r="4" cx="0" cy="0" data-page-node-id="EKoDF5MlVEE5oxICxNcaFh"/>
+    <path id="frame-hit" d="" data-page-node-id="6hIT0vxhoe5lX8dIsAqatM"/>
+  </svg>
+
+  <div class="dock-inner" data-page-node-id="QEEk4ClYM6M07A37JkE3Jv">
+    <!-- 左：封面 + 曲名 + 喜欢 + 不喜欢（R49 恢复 #d-fav：老 UI L844 同款 ♥，点亮放礼花） -->
+    <div class="dock-left" data-page-node-id="2b1MSi0B9lABb7XuoSkPeU">
+      <div class="dc-cover" id="dc-cover" data-page-node-id="xlGyCWM5sGyxueakxNE6py"><img id="dc-cover-img" alt="cover" src="/brand/logo_small.png" data-page-node-id="PMBVyFRpTiVFgNvronIYK4"></div>
+      <div class="dc-meta" data-page-node-id="AR8lEzbXvbKF1Sfi6zvBg6">
+        <div class="t" id="dc-title" data-page-node-id="hbnggKmekWQCy0Q3FaO8Ax">未在播放</div>
+        <div class="a" id="dc-artist" data-page-node-id="HesnkXpoRYZ3nsVP3pyQrd">—</div>
+      </div>
+      <button class="dbtn" id="d-fav" title="喜欢（收藏到曲库）" disabled data-page-node-id="xB7fav01">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="xB7fav02"><path d="M12 20s-7-4.5-9.5-9A5.4 5.4 0 0 1 12 6.4 5.4 5.4 0 0 1 21.5 11C19 15.5 12 20 12 20z" data-page-node-id="xB7fav03"/></svg>
+      </button>
+      <button class="dbtn" id="d-dislike" title="不喜欢（AI 将避开）" disabled data-page-node-id="r1xgjqGtY1FPwI59FwqXjC">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="ML1qLybOiDRjW3bsd0Tapl"><path d="M12 20s-7-4.5-9.5-9A5.4 5.4 0 0 1 12 6.4 5.4 5.4 0 0 1 21.5 11C19 15.5 12 20 12 20z" data-page-node-id="8RmICNtrFrLm9KFwIwHdFT"/><path d="M4 20L20 4" data-page-node-id="tqIVPc0oUdhfZ7RSrYkhUX"/></svg>
+      </button>
+    </div>
+
+    <!-- 中：模式 / 上下曲 / 播放 / 均衡器 / 歌词 / 队列 -->
+    <button class="dbtn d-mode-shift" id="d-mode" title="播放模式：顺序播放" disabled data-page-node-id="8UqK3kS1q2PAsDRh7FUVE1">
+      <svg id="d-mode-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Azs2RDrCwbjUfobVymhK2C"><path d="M4 6h16M4 12h16M4 18h16" data-page-node-id="EAEqOVZuY92CYxuYSWJdJO"/></svg>
+    </button>
+    <button class="dbtn" id="d-prev" title="上一曲" disabled data-page-node-id="ehDJjpjXvtnayBEmAEVrc5">
+      <svg viewBox="0 0 24 24" fill="currentColor" data-page-node-id="DEVMlGfOVfVbNjw129Pwkw"><path d="M6 5h2v14H6zM20 5v14l-10-7z" data-page-node-id="O06YbRslMdldBcJNZbUsrL"/></svg>
+    </button>
+    <button class="dbtn" id="d-play" title="播放/暂停" disabled data-page-node-id="hVycYy0Vewy8C6Mca0EbxU">
+      <svg id="ico-play" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="YDoOETLujX0wd1cYOe4RPz"><path d="M8 5v14l11-7z" data-page-node-id="8ekFq34KeAgkHExDCueXdn"/></svg>
+    </button>
+    <button class="dbtn" id="d-next" title="下一曲" disabled data-page-node-id="9c18A49k31XJzyKJcGLfgB">
+      <svg viewBox="0 0 24 24" fill="currentColor" data-page-node-id="g134kDOrQ8efqwZBGiG0d9"><path d="M16 5h2v14h-2zM4 5v14l10-7z" data-page-node-id="dl6D5TAM3CrAMcqCOvyadt"/></svg>
+    </button>
+    <div id="eq" role="button" tabindex="0" title="均衡器（EQ）" aria-label="均衡器（EQ）" data-page-node-id="CmlITHAWqauBQYcDvG4gRM"><i data-page-node-id="Qblfopm1obyb4upR5nujEV"></i><i data-page-node-id="lDHTCENxpdEJrnbFEmkGdd"></i><i data-page-node-id="0pjKDUf0IVBd0MOwMsSEN3"></i><i data-page-node-id="EIJ1OHG5eLIBoyUGGPygbz"></i><i data-page-node-id="KKDHg2GOET2cMRs3Bv6B4V"></i></div>
+    <button class="dbtn" id="d-lyric" title="歌词" disabled data-page-node-id="jTP6cA9vfLtZwp1Glyypho"><span style="font-size:13px;font-weight:600" data-page-node-id="jFpoHvFANEHLuu1y3yhF8G">词</span></button>
+    <button class="dbtn" id="d-queue" title="播放列表" disabled data-page-node-id="dGmLiaUjQkNQ3mD5iIJnut">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="YIKz8EeZ3d0iNuBw1mKRYe"><path d="M4 6h16M4 12h10M4 18h13" data-page-node-id="8i43hrDHzCxfdAKPBEfjyZ"/><circle cx="18" cy="18" r="3" data-page-node-id="uewHqCIBRl9GZhcyxzMciY"/></svg>
+    </button>
+    <!-- 播放历史：与播放列表**各自独立**的入口（老 UI #d-history 同义，R46-4）。
+         曲库入口已收到主界面（orbit 'fav' → /api/library），dock 栏不再重复入口。 -->
+    <button class="dbtn" id="d-history" title="播放历史" disabled data-page-node-id="xB7history01">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="xB7history02"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" data-page-node-id="xB7history03"/><path d="M3 3v5h5" data-page-node-id="xB7history04"/><path d="M12 7v5l3 2" data-page-node-id="xB7history05"/></svg>
+    </button>
+
+    <!-- 音量组 -->
+    <div id="vol-group" data-page-node-id="1i88cCluxvcL4swNMwDDB8">
+      <button class="dbtn" id="vol-icon" title="静音切换" data-page-node-id="xLFjsJFNs4rpx7yaMOsHs7">
+        <svg class="vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="QzarkDAfQh7xlVaupBgyUv"><path d="M11 5L6 9H3v6h3l5 4z" data-page-node-id="JOXZ0wD1WzIgKXHXS2XvVe"/><path d="M15.5 8.5a5 5 0 0 1 0 7" data-page-node-id="8Cy5iS2KIGcOOSYkT6DL6A"/><path d="M18.5 5.5a9 9 0 0 1 0 13" data-page-node-id="7WSDgu7KxZyVEiuAsqWbXT"/></svg>
+        <svg class="vol-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="IxgGK8rqBRgdeYgcqZm0Hv"><path d="M11 5L6 9H3v6h3l5 4z" data-page-node-id="CXsiNBif2o43IGAmdbN5Nt"/><path d="M16 9l6 6M22 9l-6 6" data-page-node-id="h83nrUFJTMiKNS2qwk6osk"/></svg>
+      </button>
+      <div id="vol" title="音量" data-page-node-id="IICxSRw7NlM1LEIzWzGnD0">
+        <div id="vol-track" data-page-node-id="NfLbirp5pXVtcDkVLq00Qy"><div id="vol-fill" data-page-node-id="GMisej3fdDZWTOS0QFedhf"></div></div>
+        <div id="vol-thumb" data-page-node-id="at8nFptggCDa92pBBntvbH"></div>
+      </div>
+    </div>
+
+    <!-- 右：电台模式 / AI 伴听 -->
+    <div class="dock-right" data-page-node-id="k5Ck0lZjj6fZOaFO2AAVXv">
+      <button class="dbtn pulse" id="d-radio" title="电台模式" style="position:static;width:34px;height:34px" data-page-node-id="k6NDJJ7knN9uxgHUd06eVJ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="HF7cCL2L4YtMfSrM7HMNtT"><path d="M4 17a8 8 0 1 1 16 0" data-page-node-id="kCAbGtDtmCyBK7hm4SXZGA"/><path d="M8 14.5v3M12 13v5M16 14.5v3" data-page-node-id="Gg5gErKknLbiOC7ImQJkmi"/></svg>
+      </button>
+      <button class="dbtn pulse" id="d-ai" title="AI 伴听" style="position:static;width:34px;height:34px" data-page-node-id="KVQI3s3WdzmiFErzUKFakg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="luVwv20A07vIDAF0oiP751"><path d="M12 3a6 6 0 0 0-6 6v3a6 6 0 0 0 12 0V9a6 6 0 0 0-6-6z" data-page-node-id="Lvr9FTLQeEQpZCKLuZ8ymn"/><path d="M9 21h6" data-page-node-id="v3yZtcSJr8mS7BmFCtK78p"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 漫游滑块（R49-31）：推荐风格四档，仅漫游(wander)栏目显示；dock 上方悬浮 -->
+<div id="rec-style">
+  <span class="rs-label">推荐风格</span>
+  <input type="range" id="rs-slider" min="0" max="3" step="1" value="1" data-full="0">
+  <span class="rs-val" id="rs-val">略熟悉</span>
+</div>
+
+<!-- ═══════════ R68 · EQ 面板（dock #eq 按钮唤出，dock 正上方悬浮） ═══════════
+     手动 / 预设 / 动态三合一：
+       · 手动 = 10 段 ISO 垂直滑杆（31..16k，±12dB）
+       · 预设 = Flat/Bass/Treble/Vocal/Podcast/Pop/Rock/HipHop/Classical/Loudness 一键
+       · 动态 = 音量等响补偿强度（Fletcher–Munson：音量越低自动补低频/高频）
+     ⚠ 面板 id 已加进 ui-orbit.js PANEL_SEL → isolatedZone 拦截滚轮/点击，
+       在面板上操作绝不穿透到底下歌词/dock（用户点名要求）。 -->
+<div id="eq-panel" aria-hidden="true">
+  <div class="eqp-head">
+    <h3>均衡器</h3>
+    <!-- ⚠⚠ R69→R75b：EQ 总开关（顶栏）。R69 自绘 iOS → R75a 原生横向 range
+        → R75b（用户拍板「要设置里面圆圆的那个，不需要拖动」）复刻设置面板
+        .fx-toggle 圆钮开关：胶囊 .tk + 白圆点，纯点击切换、无需拖动。
+        #eqp-power(label) + #eqp-power-range(range, 隐形契约元素) 结构保留：
+        label click 翻转 + range 冒泡合成 click 短路（verify_eq_r68 C7 契约）。 -->
+    <label class="eqp-switch" id="eqp-power" title="EQ 总开关">
+      <span class="eqp-sw-lb" id="eqp-power-lb">EQ</span>
+      <input type="range" id="eqp-power-range" min="0" max="1" step="1" value="0" aria-label="EQ 总开关">
+      <span class="tk"></span>
+    </label>
+    <button class="eqp-close" id="eqp-close" title="关闭" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="eqp-seg" id="eqp-seg">
+    <button class="eqp-tab on" data-mode="manual">手动</button>
+    <button class="eqp-tab" data-mode="preset">预设</button>
+    <button class="eqp-tab" data-mode="dynamic">动态</button>
+  </div>
+  <!-- 模式 A：手动 10 段滑杆 -->
+  <div class="eqp-body eqp-manual" id="eqp-manual">
+    <div class="eqp-bands" id="eqp-bands"></div>
+    <div class="eqp-reset"><button id="eqp-reset" class="eqp-mini">全部归零</button></div>
+  </div>
+  <!-- 模式 B：预设 chips -->
+  <div class="eqp-body eqp-preset" id="eqp-preset" hidden>
+    <div class="eqp-chips" id="eqp-chips"></div>
+    <div class="eqp-hint" id="eqp-preset-hint"></div>
+  </div>
+  <!-- 模式 C：动态 -->
+  <div class="eqp-body eqp-dynamic" id="eqp-dynamic" hidden>
+    <div class="eqp-row">
+      <label for="eqp-dyn">补偿强度</label>
+      <input type="range" id="eqp-dyn" min="0" max="100" step="5" value="60">
+      <span class="eqp-val" id="eqp-dyn-val">60%</span>
+    </div>
+    <div class="eqp-hint">音量越低，自动提升低频 / 高频（等响度补偿，Fletcher–Munson）。</div>
+  </div>
+</div>
+
+<!-- Toast（原 UI L1010/L700-702/L4199-4220）：底部悬浮反馈气泡，锚定 rec-style/dock -->
+<div id="toast"></div>
+
+<!-- ═══════════ R54 · 顶部搜索框（原 ui/ai-radio-player.html L820-825 / L264-278） ═══════════
+     靠近页面顶部渐显、离开渐隐；建议下拉展示跨音源搜索结果（/api/search）。
+     液态玻璃透镜：liquid_glass.js TARGETS 已注册 #search-box。 -->
+<div id="search-box">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+  <input id="search-input" type="text" placeholder="搜索歌曲 / 歌手" autocomplete="off" spellcheck="false">
+  <button id="search-clear" title="清空" aria-label="清空">✕</button>
+  <!-- R86 · 切换搜索源开关（搜索框内右侧）：
+       交互复刻 EQ 圆钮开关（胶囊 + 圆点、纯点击切换、不可拖）；
+       用户拍板样式：**轨道透明不加色**，**滑块本身渐变色 + 像进度条那样发光**。
+       #ss-src-lb 显示当前音源短名（QQ / 网易 …）。 -->
+  <label id="ss-src" class="ss-src" title="切换搜索源">
+    <span class="ss-src-lb" id="ss-src-lb">—</span>
+    <input type="checkbox" id="ss-src-cb" aria-label="切换搜索源">
+    <span class="tk"></span>
+  </label>
+  <div id="search-suggest"></div>
+</div>
+
+<!-- ═══════════ R56 · 设置卡 + 皮肤卡（双右侧抽屉，从右缘伸出 + 主界面左推透视） ═══════════
+     用户原话：「皮肤、背景、高亮色这三个全都移到皮肤按钮控制的里面。并完善设置其它功能的对接要求」
+     「设置中切换播放逻辑的不显示（顺序，单曲循环随机等），主界面元素的设置不显示，
+       去掉流动水样功能及其设置，完善皮肤中对壁纸引擎及图片的导入设置」
+     · 皮肤卡（#theme-panel，衣架钮开）= 皮肤调色板 + 高亮色 + 背景模式（海报/亚克力）
+       + 自定义壁纸导入（图片 / 链接 / 歌曲封面，沿老 UI wp-* 语义；R61 去 video/壁纸引擎）
+     · 设置卡（#settings-panel，齿轮钮开）= 其余通用项（不喜欢的音乐 等）
+     · 两卡都是液态玻璃抽屉，从右缘伸出；body.drawer-open 驱动主界面左推 + rotateY。 -->
+<button id="settings-gear" title="设置" aria-label="设置">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</button>
+<button id="theme-hanger" title="换肤" aria-label="换肤">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.2a1.4 1.4 0 0 1 2.8 0V5.2"/><path d="M12 5.6 4.2 14.8a1 1 0 0 0 .8 1.6h14a1 1 0 0 0 .8-1.6L12 5.6z"/></svg>
+</button>
+
+<!-- 通用设置卡（齿轮钮）：4 tab 切换（AI / TTS / 音源 / 通用）
+     R67-2：4 个 tab 取代原纵向 section 堆叠；外观 section 删（皮肤按钮已独立）；
+     本地曲库 / 不喜欢的音乐 挪进「通用」tab。
+     数据由 ui-settings.js 按 SETTING_SCHEMA 渲染到对应 .stab-panel。
+     ⚠ .stab-panel + .settings-dynamic[data-gid=...] 都必须存在，否则 setControl 静默跳过。 -->
+<div id="settings-panel">
+  <div class="set-head">
+    <h3>设置</h3>
+    <button class="set-close" id="set-close" title="关闭" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="set-tabs" id="settings-tabs">
+    <button class="stab active" data-tab="ai">AI 大模型</button>
+    <button class="stab" data-tab="tts">语音 TTS</button>
+    <button class="stab" data-tab="sources">音源</button>
+    <button class="stab" data-tab="general">通用</button>
+  </div>
+  <div class="set-body set-tab-panels">
+    <!-- 三个空 panel，ui-settings.js 按 gid 注入对应动态分组 -->
+    <div class="stab-panel active" data-tab="ai"><div class="settings-dynamic" data-gid="ai"></div></div>
+    <div class="stab-panel" data-tab="tts"><div class="settings-dynamic" data-gid="tts"></div></div>
+    <div class="stab-panel" data-tab="sources"><div class="settings-dynamic" data-gid="sources"></div></div>
+    <!-- 通用 tab：静态本地曲库 / 不喜欢 + 动态通用 / 曲库与匹配 -->
+    <div class="stab-panel" data-tab="general">
+      <!-- R67-2：本地曲库挪进通用 tab -->
+      <!-- R62 #9：本地曲库（老 UI scan-lib / import-folder 接入）-->
+      <section class="set-group" data-gid="locallib">
+        <h4>本地曲库</h4>
+        <div class="set-row set-wallpaper-input">
+          <input id="lib-folder-input" class="set-input" type="text" placeholder="输入要导入的音乐文件夹绝对路径，如 D:\Music" autocomplete="off" spellcheck="false">
+          <button id="lib-import-folder" class="wp-import-btn" type="button">导入文件夹</button>
+        </div>
+        <div class="set-row">
+          <button id="lib-scan" class="set-mini-btn" type="button">重新扫描已配置曲库目录</button>
+        </div>
+        <div class="set-hint">导入的本地音乐会自动点亮红心。</div>
+      </section>
+      <!-- R67-4：不喜欢的音乐挪进通用 tab（从设置卡顶部独立 section 改为通用 tab 内可折叠 section） -->
+      <section class="set-group collapsed" data-gid="dislike" data-foldable>
+        <h4>不喜欢的音乐（AI 将避开）</h4>
+        <div class="set-row">
+          <span id="dislike-count" class="set-sub">0 首</span>
+        </div>
+        <div id="dislike-list" class="dislike-list"></div>
+      </section>
+      <!-- 通用 + 曲库与匹配 动态渲染（rec_pref 已从 SETTING_SCHEMA 删除，
+           由主界面推荐风格滑块统一读写 user_config.rec_pref） -->
+      <div class="settings-dynamic" data-gid="general"></div>
+      <div class="settings-dynamic" data-gid="match"></div>
+      <!-- ═══ R105 / E-α · 彩蛋·关于（纯静态，ui-settings.js 不接管此 gid；data-foldable 使其不被折叠委托影响）═══ -->
+      <section class="set-group" data-gid="eggs-about" data-foldable id="eggs-about-group">
+        <h4>关于 Radio Intelligence</h4>
+        <div class="eggs-declaration" id="eggs-declaration">
+          <p>Originally designed by Homo sapiens</p>
+          <p>assembled and implemented by Silicon-based life</p>
+          <p class="eggs-viva">¡Viva la vida y la cooperación entre especies!</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- 换肤卡（衣架钮）：皮肤调色板 / 高亮 / 背景模式 / 自定义壁纸导入 -->
+<div id="theme-panel">
+  <div class="set-head">
+    <h3>换肤</h3>
+    <button class="set-close" id="theme-close" title="关闭" aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="set-body">
+    <!-- R105 / E-α · Apple 六色彩虹发丝线（致敬，极克制，恒定出现在换肤卡最顶） -->
+    <div class="eggs-rainbow" aria-hidden="true"></div>
+    <!-- 皮肤调色板 -->
+    <section class="set-group" data-gid="theme">
+      <h4>皮肤</h4>
+      <div class="set-row set-skin-list-wrap">
+        <div id="skin-list" class="skin-list"></div>
+      </div>
+      <div class="set-row set-accent-row">
+        <label class="set-label">高亮色（覆盖主题）</label>
+        <input type="color" id="fx-accent-picker" value="#a99bff" title="界面高亮色">
+        <button class="set-mini-btn" id="fx-accent-reset">默认</button>
+      </div>
+    </section>
+    <!-- 背景效果（R57-1：亚克力=皮肤之上的可选效果；锐利无效果也是一种效果。
+         R60：歌词海报 = 皮肤（下方自定义壁纸/封面/默认皮肤都是皮肤内容），
+         这里只选叠在皮肤之上的效果。R61：按钮就叫「无效果」，去「（锐利）」后缀。 -->
+    <section class="set-group" data-gid="bgmode">
+      <h4>背景效果</h4>
+      <div class="set-row set-wallpaper-types" id="bg-mode-row">
+        <button class="wp-type active" data-bgmode="poster">无效果</button>
+        <button class="wp-type" data-bgmode="acrylic">亚克力</button>
+      </div>
+      <div class="set-hint" id="bgmode-hint">效果作用于背景皮肤（封面 / 自定义壁纸 / 默认主题）。</div>
+      <!-- ═══ 音频律动（真实频谱 → 封面随音乐呼吸）═══
+           body.beat-on 门控 beatTick；偏好持久化 ui_prefs.beat。
+           EQ 条常开（dock 装饰），此开关额外驱动封面律动。 -->
+      <div class="set-row" id="beat-row">
+        <label class="set-label" for="beat-toggle">音频律动</label>
+        <label class="set-switch"><input type="checkbox" id="beat-toggle" checked><span class="tk"></span></label>
+      </div>
+      <!-- R66：原「封面随音乐低音轻微呼吸（需后端频谱，无订阅自动关闭）」提示删除（开关名已自明） -->
+    </section>
+    <!-- ═══ R93 · 叠层效果（on-top effect）═══
+         P4 契约：ontop-effect = 叠在「背景效果」之上的动态层，water 是首个实例；
+         「无效果（none）也是一张常驻卡」；形态 = 分段卡 n 选一（复用 .wp-type，
+         与上方「背景效果」如出一辙；沿用 dock「简单点亮、禁 :active scale」铁则，不用滑块）。
+         路线 A：本 row 与「背景效果」row **并列独立** → 水面 + 亚克力可同时生效（零行为变更）。
+         收编原 #water-row checkbox：卡片选中 → 调 __water.setEnabled()（仍是唯一启停入口）。
+         选中「水面」时下方 #water-opts 展开（每个 ontop 插件自带 1 个参数组）。 -->
+    <section class="set-group" data-gid="ontop">
+      <h4>叠层效果</h4>
+      <div class="set-row set-wallpaper-types" id="ontop-row">
+        <button class="wp-type" data-ontop="none">无效果</button>
+        <button class="wp-type active" data-ontop="water">水面</button>
+      </div>
+      <div class="set-hint" id="ontop-hint">叠在背景效果之上的动态层，可与其同时生效。</div>
+      <div id="water-opts" class="open">
+        <div class="wo-grp" id="wo-common">
+          <h5>水面参数</h5>
+          <div class="wo-row">
+            <label class="set-label" for="wo-specexp">波纹细度</label>
+            <input type="range" class="wo-range" id="wo-specexp"
+                   min="-2" max="-1.5" step="0.05" value="-2">
+            <span class="wo-val" id="wo-specexp-v">-2.0</span>
+            <span class="wo-tag" id="wo-specexp-tag">k⁻² 谱</span>
+          </div>
+          <div class="wo-row">
+            <label class="set-label" for="wo-sem">情绪强度</label>
+            <input type="range" class="wo-range" id="wo-sem"
+                   min="0" max="1" step="0.05" value="0.6">
+            <span class="wo-val" id="wo-sem-v">0.60</span>
+          </div>
+          <div class="wo-row">
+            <label class="set-label">画质档位</label>
+            <div class="wo-seg" id="wo-tier">
+              <button class="wp-type active" data-v="Q3">高</button>
+              <button class="wp-type" data-v="Q2">中</button>
+              <button class="wp-type" data-v="Q1">低</button>
+            </div>
+          </div>
+          <div class="wo-btns">
+            <button class="set-mini-btn" id="wo-reroll">换一批波形</button>
+            <button class="set-mini-btn" id="wo-reset">恢复默认</button>
+          </div>
+        </div>
+        <!-- 工程对照项：默认折叠（用户向 5 项常显，偏 A/B 对照的收进这里） -->
+        <div class="wo-adv open" id="wo-adv">
+          <button class="wo-adv-btn" id="wo-adv-btn" type="button">
+            <span class="wo-caret">›</span><span>高级（工程对照）</span>
+          </button>
+          <div class="wo-adv-body">
+        <!-- ═══ 2026-09-19 · 视觉调参（ui-water）：由 ui-settings.js 的 FX_WATER_SCHEMA 渲染。
+             接入新的效果层只需往那个数组追加一项即可（不需要再动 HTML）。 ═══ -->
+        <div class="wo-grp" id="wo-fx-grp">
+          <h5>视觉调参（ui-water）</h5>
+          <div id="wo-fx-body"></div>
+        </div>
+            <div class="wo-grp">
+              <h5>对照开关</h5>
+              <div class="wo-row">
+                <label class="set-label" for="wo-physics">物理增强（R90）</label>
+                <label class="set-switch"><input type="checkbox" id="wo-physics" checked><span class="tk"></span></label>
+              </div>
+              <div class="wo-row">
+                <label class="set-label" for="wo-pulse">段切换脉冲</label>
+                <label class="set-switch"><input type="checkbox" id="wo-pulse"><span class="tk"></span></label>
+              </div>
+              <div class="wo-row">
+                <label class="set-label">事件模式</label>
+                <div class="wo-seg" id="wo-eventmode">
+                  <button class="wp-type active" data-v="emotion">情绪包络</button>
+                  <button class="wp-type" data-v="ripple">逐拍涟漪</button>
+                </div>
+              </div>
+              <div class="wo-row">
+                <label class="set-label">波银行</label>
+                <div class="wo-seg" id="wo-bank">
+                  <button class="wp-type active" data-v="bank">相位累加</button>
+                  <button class="wp-type" data-v="legacy">旧版三波</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- 自定义壁纸导入（老 UI wp-type-row / wp-input / wp-import）。
+         R61：来源加「歌曲封面」—— 切到自定义壁纸后可一键切回封面背景。
+         R62 #10（用户原话）：恢复 video/壁纸引擎 = 「放在皮肤自定义设置里
+         作为一个按钮，共用一个导入框」→ 五型按钮共用下方同一个 #wp-input。
+         R65：壁纸引擎真导入 —— Steam 链接/ID 走 /import-engine；本地 .zip
+         工程包经 #wp-file 上传走 /import-zip；不再「需桌面端」降级。 -->
+    <section class="set-group" data-gid="wallpaper">
+      <h4>自定义壁纸</h4>
+      <div class="set-row set-wallpaper-types" id="wp-type-row">
+        <button class="wp-type" data-wp="default">默认</button>
+        <button class="wp-type" data-wp="cover">歌曲封面</button>
+        <button class="wp-type active" data-wp="image">图片</button>
+        <button class="wp-type" data-wp="link">链接</button>
+        <button class="wp-type" data-wp="video">视频</button>
+        <button class="wp-type" data-wp="wallpaper">壁纸引擎</button>
+      </div>
+      <div class="set-row set-wallpaper-input">
+        <input id="wp-input" class="set-input" type="text" placeholder="粘贴图片 URL，或点「选择文件」" autocomplete="off" spellcheck="false">
+        <button id="wp-pick" class="wp-import-btn" type="button" title="选择本地图片文件">选择文件</button>
+        <button id="wp-import" class="wp-import-btn">导入</button>
+        <!-- 隐藏 file input：R57-2 百分百可用路径 —— 浏览器 FileReader 读成
+             dataURL，无需后端 WallpaperImporter，http 页面也能显示本地图。
+             R62 #10：accept 扩到 video（*.mp4/.webm/.ogg），video 类型选本地
+             文件同样走 FileReader → dataURL 喂 #bgvideo。
+             R65：accept 再加 .zip —— 壁纸引擎类型选 zip 上传后端解包导入。 -->
+        <input id="wp-file" type="file" accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,video/*,.mp4,.webm,.ogg,.zip,application/zip" style="display:none">
+      </div>
+      <!-- R66：原 #wp-hint 恒为空（无任何 JS 写入），死元素，删除。 -->
+      <!-- ═══ R66：原 R63「我的壁纸」网格（+ 网格内加号导入卡）已移除 ═══
+           用户判定冗余：上方「自定义壁纸」的图片/链接/视频/壁纸引擎 + 选择文件/导入
+           已经能完全搞定，下面再挂一个网格 + 一套导入入口是重复功能。
+           ⚠ 后端 /api/wallpapers 系列**保留**（图片导入仍走它做持久化落盘），
+             只是不再有"壁纸管理"UI 面；相关 JS（loadMyWallpapers 等）同步摘除。 -->
+    </section>
+  </div>
+</div>
+
+<!-- ═══ R64：扫码登录弹层（音源设置：网易云 / QQ音乐）═══
+     移植老 web UI L1011-1019。二维码由后端统一生成 480×480 白底 PNG data URL，
+     前端只负责展示 + 轮询 /api/settings/qr/poll。 -->
+<div id="qr-modal">
+  <div class="qr-card">
+    <div class="qr-head"><span id="qr-title">扫码登录</span><button id="qr-close" title="关闭">✕</button></div>
+    <img id="qr-img" alt="二维码">
+    <div id="qr-status">等待扫码…</div>
+  </div>
+</div>
+
+<!-- 新 UI：老 UI 的 DOM+CSS 逐字复制（视觉完全一致），JS 按 ESM 架构重构。
+     水体 ui-water.js 是冻结核心且用户已结案，不在新 UI 加载；#water canvas 保留但不渲染。 -->
+<script type="module" src="/new-assets/js/main-modular.js"></script>
+</body>
+</html>

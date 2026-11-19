@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "generated": "2026-11-17",
+  "note": "P1 骨架：仅登记，不启用任何插件；零视觉变化。权威 docs/UI_ARCH_DECISION_20261117_084816.md",
+  "plugins": [
+    {
+      "id": "art.ripple.ink",
+      "dir": "builtin/ripple-ink",
+      "entry": "plugin.js",
+      "enabled": false,
+      "manifest": {
+        "id": "art.ripple.ink",
+        "name": "墨迹涟漪",
+        "version": "0.1.0",
+        "type": "art-effect",
+        "slot": "ripple",
+        "entry": "plugin.js",
+        "execution": "cold",
+        "capabilities": ["dom:body", "css.vars", "bus:beats@event"],
+        "prefs": [
+          { "key": "intensity", "type": "range", "min": 0, "max": 1, "default": 0.6 }
+        ],
+        "assets": [],
+        "hostApi": ">=1.0.0"
+      }
+    }
+  ]
+}

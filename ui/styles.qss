@@ -1,0 +1,202 @@
+/* MusicAI 浅色界面样式（PySide6 QSS）—— 参考 AIStarRadio 的干净清爽风格 */
+* {
+    font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    font-size: 13px;
+}
+
+QWidget {
+    background-color: #eef1f5;
+    color: #1f2329;
+}
+
+QMainWindow {
+    background-color: #eef1f5;
+}
+
+/* 通用卡片 / 面板 */
+QFrame#Panel, QFrame#PlayerBar, QFrame#Card {
+    background-color: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 12px;
+}
+
+/* 标题 / 次级文字 */
+QLabel#Title { font-size: 17px; font-weight: bold; color: #1f2329; }
+QLabel#Sub { color: #8a9099; }
+QLabel#HeaderLabel {
+    font-size: 16px; font-weight: bold; color: #1f2329;
+    background: transparent;
+}
+
+/* 顶部工具栏按钮 */
+QPushButton#ToolButton {
+    background-color: #ffffff;
+    border: 1px solid #e2e6ec;
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: #1f2329;
+}
+QPushButton#ToolButton:hover { background-color: #f3f6fa; border-color: #cdd5df; }
+QPushButton#ToolButton:pressed { background-color: #e9eef5; }
+
+/* 主操作按钮（绿色强调，保留 MusicAI 品牌色） */
+QPushButton#Primary {
+    background-color: #1db954; color: #ffffff; font-weight: bold;
+    border: none; border-radius: 8px; padding: 8px 18px;
+}
+QPushButton#Primary:hover { background-color: #1ed760; }
+QPushButton#Primary:checked { background-color: #15833b; }
+
+/* 图标按钮（播放控制） */
+QPushButton#Icon {
+    background-color: #f3f6fa; border: 1px solid #e2e6ec; border-radius: 50%;
+    font-size: 18px; padding: 8px; min-width: 38px; min-height: 38px; color: #1f2329;
+}
+QPushButton#Icon:hover { background-color: #e9eef5; }
+
+/* 主播放按钮（绿色圆形） */
+QPushButton#PlayBtn {
+    background-color: #1db954; color: #ffffff; border: none; border-radius: 50%;
+    font-size: 20px; min-width: 46px; min-height: 46px;
+}
+QPushButton#PlayBtn:hover { background-color: #1ed760; }
+
+/* 本地曲库「添加」按钮 */
+QPushButton#AddBtn {
+    background-color: #eaf6ef; color: #1aa260; font-weight: bold;
+    border: 1px solid #bfe6cd; border-radius: 8px; padding: 6px 12px;
+}
+QPushButton#AddBtn:hover { background-color: #dff2e6; }
+
+/* 列表（曲库 / 收藏 / 歌单） */
+QListWidget {
+    background-color: #ffffff; border: 1px solid #e2e6ec; border-radius: 10px;
+    color: #1f2329;
+}
+QListWidget::item { padding: 8px 10px; border-radius: 6px; }
+QListWidget::item:hover { background-color: #f3f6fa; }
+QListWidget::item:selected { background-color: #1db954; color: #ffffff; }
+
+/* 左侧导航侧栏 */
+QListWidget#NavList {
+    background-color: #f7f9fc; border: none; border-radius: 10px;
+}
+QListWidget#NavList::item { padding: 10px 14px; border-radius: 8px; color: #3a4049; }
+QListWidget#NavList::item:hover { background-color: #eaf0f7; }
+QListWidget#NavList::item:selected {
+    background-color: #1db954; color: #ffffff; font-weight: bold;
+}
+
+/* 滑块（进度 / 音量） */
+QSlider::groove:horizontal { height: 6px; background: #e2e6ec; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: #1db954; border-radius: 3px; }
+QSlider::handle:horizontal {
+    width: 14px; height: 14px; background: #ffffff;
+    border: 2px solid #1db954; border-radius: 8px; margin-top: -4px; margin-bottom: -4px;
+}
+QSlider::handle:horizontal:hover { background: #f0fff5; }
+
+/* 输入框 / 下拉 */
+QComboBox, QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox {
+    background-color: #ffffff; border: 1px solid #d7dde5; border-radius: 8px;
+    padding: 6px 8px; color: #1f2329;
+}
+QComboBox:focus, QLineEdit:focus, QTextEdit:focus {
+    border: 1px solid #1db954;
+}
+QComboBox QAbstractItemView {
+    background-color: #ffffff; border: 1px solid #e2e6ec; border-radius: 8px;
+    selection-background-color: #1db954; selection-color: #ffffff;
+}
+
+/* 复选框 */
+QCheckBox { background: transparent; spacing: 6px; }
+QCheckBox::indicator { width: 16px; height: 16px; border-radius: 4px;
+    border: 1px solid #c2cad4; background: #ffffff; }
+QCheckBox::indicator:checked { background: #1db954; border-color: #1db954; }
+
+/* 歌词面板：当前行高亮 */
+QListWidget#Lyrics { background-color: #fbfcfe; }
+QListWidget#Lyrics::item {
+    padding: 7px 12px; border-radius: 6px; color: #9aa1ab; font-size: 14px;
+}
+QListWidget#Lyrics::item:selected {
+    background-color: #1db954; color: #ffffff; font-weight: bold;
+}
+
+/* AI 口播对话框 */
+QTextBrowser#Broadcast {
+    background-color: #fbfcfe; border: 1px solid #e2e6ec; border-radius: 12px;
+    color: #1f2329; font-size: 13px;
+}
+
+/* 标签页 / 堆叠 / 分隔条 */
+QTabWidget::pane { border: none; background: transparent; }
+QTabBar::tab {
+    background: #ffffff; border: 1px solid #e2e6ec; border-radius: 8px;
+    padding: 7px 16px; margin-right: 6px; color: #3a4049;
+}
+QTabBar::tab:selected { background: #1db954; color: #ffffff; border-color: #1db954; }
+QSplitter::handle { background: transparent; }
+QStackedWidget { background: transparent; }
+
+/* 分组框（设置页） */
+QGroupBox {
+    background-color: #ffffff; border: 1px solid #e2e6ec; border-radius: 10px;
+    margin-top: 12px; padding-top: 10px;
+}
+QGroupBox::title { subcontrol-origin: margin; left: 12px; color: #1f2329; font-weight: bold; }
+
+/* 滚动区域背景 */
+QScrollArea { background: transparent; border: none; }
+
+/* 对话框按钮 */
+QDialogButtonBox QPushButton {
+    background-color: #f3f6fa; border: 1px solid #e2e6ec; border-radius: 8px;
+    padding: 7px 16px; color: #1f2329;
+}
+QDialogButtonBox QPushButton:hover { background-color: #e9eef5; }
+
+/* ====================== 推荐 / 播放队列 ====================== */
+QListWidget#QueueList {
+    background-color: #ffffff; border: 1px solid #e2e6ec; border-radius: 12px;
+    padding: 4px; outline: 0;
+}
+QListWidget#QueueList::item { border: none; background: transparent; }
+QListWidget#QueueList::item:selected { background: transparent; }
+
+QWidget#QueueRow, QWidget#QueueRowCurrent {
+    background-color: #f7f9fc; border-radius: 8px; padding: 2px;
+}
+QWidget#QueueRowCurrent {
+    background-color: #e8f7ee; border: 1px solid #1db954;
+}
+QLabel#QueueTitle { color: #1f2329; font-size: 13px; padding: 2px 4px; }
+QPushButton#QueueHeart {
+    background: transparent; color: #e74c3c; font-size: 16px; border: none;
+}
+QPushButton#QueueHeart:hover { color: #ff6b5e; }
+QPushButton#QueueHeartOff {
+    background: transparent; color: #b6bdc7; font-size: 16px; border: none;
+}
+QPushButton#QueueHeartOff:hover { color: #8a9099; }
+QPushButton#QueueX {
+    background: transparent; color: #b6bdc7; font-size: 13px; border: none;
+    border-radius: 6px;
+}
+QPushButton#QueueX:hover { background: #fdecea; color: #e74c3c; }
+
+/* ====================== 桌面悬浮窗 ====================== */
+QFrame#DeskCard {
+    background-color: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(180, 190, 205, 0.6);
+    border-radius: 16px;
+    padding: 0px;
+}
+QLabel#DeskTitle { color: #1f2329; font-weight: bold; font-size: 14px; }
+QLabel#DeskHint { color: #9aa1ab; font-size: 11px; }
+QPushButton#DeskBtn {
+    background: transparent; color: #8a9099; border: none; border-radius: 6px;
+    font-size: 14px;
+}
+QPushButton#DeskBtn:hover { background: #e9eef5; color: #1f2329; }

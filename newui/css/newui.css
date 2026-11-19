@@ -1,0 +1,354 @@
+/* newui/css/newui.css — 视觉配方照抄现有 UI（index.html），只作用于新 UI。
+   2026-11-18 用户批评"美术效果舍不得照抄"→ 本版逐条搬：主题变量(:43)、
+   液体玻璃 dock(:513)、呼吸环(:641-655)、卡片光晕(:259-281)、涟漪(:621-628)、
+   面板玻璃(:340/:362)、进度条渐变(:322)。不改现有 UI 一个字。 */
+:root{
+  /* 照抄 index.html:43-50 */
+  --primary:#7c6cff; --secondary:#3ddc97;
+  --accent:#a99bff; --dark:#0b0a14; --light:#e8e6f2; --fg:#e8e6f2;
+  --ease-out:cubic-bezier(.22,.8,.28,1);
+  --ease-outback:cubic-bezier(.34,1.56,.64,1);
+  --panel:rgba(20,22,36,.62); --line:rgba(255,255,255,.10);
+  --text:#e8e6f2; --dim:rgba(232,230,242,.56); --accent2:#d3a4ff;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;color:var(--fg);
+  font:14px/1.6 "Inter","Microsoft YaHei",system-ui,sans-serif;
+  /* 照抄 index.html:57-65：主题色 radial + 深渐变底，不是一块死黑 */
+  background:
+    radial-gradient(120vw 90vh at 14% -14%, color-mix(in srgb,var(--primary) 46%,transparent), transparent 60%),
+    radial-gradient(110vw 80vh at 96% 116%, color-mix(in srgb,var(--secondary) 36%,transparent), transparent 58%),
+    linear-gradient(155deg,
+      color-mix(in srgb,var(--dark) 74%,var(--primary)) 0%,
+      var(--dark) 55%,
+      color-mix(in srgb,var(--dark) 80%,var(--secondary)) 100%);
+  overflow-x:hidden; min-height:100%;
+  -webkit-user-select:none;user-select:none}
+input,textarea{ -webkit-user-select:text;user-select:text }
+
+/* 照抄旧 UI #bgimg :82-95：宽恒=屏宽、高按比例、垂直居中，不硬撑全屏 */
+.bg-media{position:fixed;left:0;top:50%;width:100%;height:auto;
+  transform:translateY(-50%);opacity:0;transition:opacity .8s ease, filter .4s ease}
+.bg-media.brand{object-fit:contain;padding:12vh 0}
+.bg-media.custom{object-fit:cover;height:100%}
+/* 照抄 R57-1 背景三层：poster=锐利直出 / acrylic=明亮 blur 磨砂玻璃 */
+.bg-veil{position:fixed;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(7,8,16,.55),rgba(7,8,16,.82))}
+body[data-bgmode="acrylic"] .bg-media{filter:blur(38px) saturate(150%) brightness(1.18);transform:translateY(-50%) scale(1.12)}
+body[data-bgmode="poster"] .bg-media{filter:none}
+
+.boot-error{position:fixed;left:50%;top:12px;transform:translateX(-50%);
+  background:#5a1524;color:#fff;padding:8px 16px;border-radius:8px;z-index:50}
+
+.shell{position:relative;z-index:2;max-width:760px;margin:0 auto;padding:22px 20px 60px}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 0 18px}
+.brand{font-size:13px;letter-spacing:.16em;color:var(--dim)}
+.brand b{color:var(--text)}
+.brand-dot{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 12px var(--accent);margin-right:8px}
+.badge-new{font-size:10px;letter-spacing:.08em;border:1px solid var(--line);
+  padding:2px 6px;border-radius:4px;margin-left:8px;color:var(--accent2)}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tab,.back-old{background:transparent;border:1px solid var(--line);color:var(--dim);
+  padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;text-decoration:none}
+.tab.active{color:var(--text);border-color:var(--accent);background:rgba(139,125,255,.12)}
+
+/* 照抄 index.html:1298-1300 面板玻璃：blur(20px) saturate(160%) + 内高光 */
+.view{
+  background:rgba(20,16,38,.7);
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:calc(88px * .28); padding:26px;
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.28),
+    inset 0 -2px 6px rgba(0,0,0,.35),
+    0 18px 48px rgba(0,0,0,.55),
+    0 0 26px color-mix(in srgb,var(--accent) 18%,transparent);
+}
+.view.hidden{display:none}
+body.booting .view{opacity:.4;pointer-events:none}
+
+.now{display:flex;align-items:center;gap:18px}
+/* 照抄 .sc-cover :282-286：88px 圆角封面 + 内高光 + 投影 */
+.cover{width:88px;height:88px;border-radius:16px;object-fit:cover;background:#1a1c2b;
+  box-shadow:0 6px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14)}
+.meta{flex:1;min-width:0}
+.title{font-size:20px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{color:var(--dim);font-size:13px;margin-top:4px}
+/* 频谱条：复用现有 #eq i 的形态（2px 宽、圆角、accent、height 过渡） */
+.eq-bars{display:flex;align-items:flex-end;gap:3px;height:20px;width:26px;justify-content:center;flex:none}
+.eq-bars i{width:2px;height:4px;border-radius:2px;background:var(--accent);opacity:.55;transition:height .12s linear}
+.lyric-bars{display:flex;align-items:flex-end;gap:3px;height:26px;padding:4px 0}
+.lyric-bars i{flex:1;min-width:2px;height:3px;border-radius:2px;background:var(--accent);opacity:.45;transition:height .12s linear}
+
+/* 统一关闭叉：照搬 index.html:1320-1329 .set-close（圆底 + hover rotate 90°） */
+.close-x-host{background:transparent;border:none;padding:0;line-height:0}
+.close-x{width:30px;height:30px;border-radius:50%;border:none;
+  display:grid;place-items:center;background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.7);cursor:pointer;
+  transition:background .2s, transform .2s cubic-bezier(.16,1,.3,1)}
+.close-x:hover{background:rgba(255,255,255,.16);color:#fff;transform:rotate(90deg)}
+.close-x svg{width:15px;height:15px}
+
+/* 照抄 :663/:671-672：喜欢/不喜欢点亮 = 实心红 + 光晕 */
+.icon{background:transparent;border:none;color:rgba(232,230,242,.82);font-size:26px;cursor:pointer;
+  transition:transform .15s var(--ease-outback), filter .2s ease, color .2s ease}
+.icon:hover{color:#fff;filter:drop-shadow(0 0 9px rgba(255,255,255,.6))}
+.icon.on{color:#ff5c7a;filter:drop-shadow(0 0 8px rgba(255,92,122,.75))}
+
+/* 照抄 :322-328：渐变采样进度条（primary→accent + 光晕） */
+.progress-wrap{margin:24px 0 18px}
+.progress{height:3px;border-radius:2px;background:rgba(255,255,255,.07);cursor:pointer;overflow:visible;position:relative}
+.progress-fill{height:100%;width:0;border-radius:2px;
+  background:linear-gradient(90deg,var(--primary) 0%,var(--accent) 100%);
+  box-shadow:0 0 10px color-mix(in srgb,var(--primary) 60%,transparent);
+  transition:width .35s ease;position:relative}
+.progress-fill::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  width:8px;height:8px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 12px var(--accent)}
+.times{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:6px}
+
+.controls{display:flex;justify-content:center;gap:18px;margin:10px 0 26px}
+.ctl{width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.05);color:rgba(232,230,242,.82);font-size:20px;cursor:pointer;
+  transition:transform .18s var(--ease-outback), filter .2s ease, color .2s ease}
+.ctl:hover{color:#fff;filter:drop-shadow(0 0 9px rgba(255,255,255,.6))}
+/* 照抄 :641-655：播放键透明底 + 呼吸圈（breathe 2.6s） */
+.ctl.primary{width:64px;height:64px;background:transparent;border:none;color:var(--text);
+  position:relative;box-shadow:none}
+.ctl.primary svg{transition:transform .18s var(--ease-outback)}
+.ctl.primary::before{content:'';position:absolute;inset:6px;border-radius:50%;
+  border:2px solid var(--accent);opacity:0;animation:breathe 2.6s ease-in-out infinite;pointer-events:none}
+.ctl.primary.playing::before{opacity:.8}
+@keyframes breathe{0%,100%{transform:scale(1.05);opacity:.25}50%{transform:scale(1.1);opacity:.55}}
+/* 点击涟漪（照抄 :621-628） */
+.ripple{position:absolute;border-radius:50%;border:2px solid var(--accent);
+  transform:scale(.2);opacity:.4;pointer-events:none;animation:ripple .5s ease-out forwards}
+@keyframes ripple{to{transform:scale(1.8);opacity:0}}
+
+.row{display:flex;align-items:center;gap:14px;padding:10px 0}
+.label{color:var(--dim);width:64px;font-size:12px}
+.modes{display:flex;gap:8px}
+.mode{border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--dim);
+  padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;
+  transition:all .18s}
+.mode.lit{color:var(--accent2);border-color:rgba(211,164,255,.4);
+  box-shadow:0 0 10px rgba(211,164,255,.18)}
+.mode.active{background:linear-gradient(135deg,rgba(139,125,255,.35),rgba(211,164,255,.35));
+  color:#fff;border-color:var(--accent2);box-shadow:0 0 16px rgba(211,164,255,.45)}
+.vol{flex:1;accent-color:var(--accent)}
+.hint{color:var(--dim);font-size:11px;margin:16px 0 0;line-height:1.7}
+
+/* 歌词卡片 */
+.lyric-card{margin:16px 0 8px;border:1px solid var(--line);border-radius:14px;
+  padding:12px 16px;background:rgba(0,0,0,.18)}
+.lyric-head{display:flex;align-items:center;justify-content:space-between}
+.lyric-title{font-size:12px;letter-spacing:.1em;color:var(--dim)}
+.lyric-body{margin-top:8px;min-height:34px;font-size:14px;line-height:1.7;color:var(--text)}
+.lyric-empty{color:var(--dim);font-size:12px}
+.set-head{display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px}
+
+h2{font-size:16px;margin:0 0 6px}
+.wallpaper-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:18px}
+.wp-card{position:relative;text-align:left;display:flex;flex-direction:column;gap:4px;
+  padding:14px;border:1px solid var(--line);border-radius:12px;
+  background:rgba(255,255,255,.03);color:var(--text);cursor:pointer;min-height:76px}
+.wp-card:hover{border-color:var(--accent)}
+.wp-card.active{border-color:var(--accent2);background:rgba(211,164,255,.12)}
+.wp-name{font-size:13px;font-weight:600}
+.wp-desc{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wp-check{position:absolute;right:10px;top:10px;font-size:10px;color:var(--accent2)}
+
+/* ═══════ 完整版增补：toast / 口播 / 搜索 / 浏览列表 / EQ / 设置 ═══════ */
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);
+  background:rgba(20,22,36,.94);border:1px solid var(--line);color:var(--text);
+  padding:8px 18px;border-radius:10px;font-size:12px;z-index:60;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+
+/* 照抄 :829-845：口播栏亮玻璃（多层 inset + 外辉光 + saturate170%） */
+.aibar{display:none;margin:0 0 16px;padding:14px 20px;
+  color:rgba(255,255,255,.96);font-size:12.5px;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.03));
+  backdrop-filter:saturate(170%);-webkit-backdrop-filter:saturate(170%);
+  border:1px solid rgba(255,255,255,.24);border-radius:18px;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 -2px 6px rgba(0,0,0,.4),
+             inset 0 0 0 1px rgba(255,255,255,.2),0 16px 44px rgba(0,0,0,.55),
+             0 0 30px color-mix(in srgb,var(--primary) 14%,transparent)}
+.aibar.show{display:flex;gap:10px;align-items:baseline;animation:chSwap .5s cubic-bezier(.16,1,.3,1)}
+.ai-tag{color:var(--accent);font-size:10px;letter-spacing:.14em;flex:none;font-weight:600}
+/* 文案换字动画（照抄 chSwap :939-942） */
+@keyframes chSwap{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.search-box{position:relative;display:flex;gap:6px;margin:18px 0}
+.search-box input[type=text]{flex:1;min-width:0;padding:8px 12px;border-radius:8px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font-size:12px}
+.search-box select{padding:8px;border-radius:8px;border:1px solid var(--line);
+  background:#141626;color:var(--dim);font-size:11px}
+.search-results{display:none;position:absolute;left:0;right:0;top:100%;z-index:20;
+  background:#141626;border:1px solid var(--line);border-radius:8px;
+  max-height:240px;overflow:auto;margin-top:4px}
+.search-results.show{display:block}
+.sresult{padding:8px 12px;font-size:12px;cursor:pointer}
+.sresult:hover{background:rgba(255,255,255,.08)}
+.sresult span{color:var(--dim);font-size:11px}
+
+.browse{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.browse-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.view-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.view-tab{padding:5px 11px;border-radius:7px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.view-tab.active{color:#fff;border-color:var(--accent);background:rgba(139,125,255,.16)}
+.browse-acts{display:flex;gap:4px}
+.mini{padding:4px 8px;border-radius:6px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:10px;cursor:pointer}
+.mini:hover{color:#fff;border-color:var(--accent)}
+.entry-list{margin-top:10px;max-height:340px;overflow:auto}
+/* 照抄 .scard :256-258 卡片玻璃 + 当前播放卡 :259-281 双层辉光呼吸 */
+.entry{position:relative;display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border-radius:14px;cursor:pointer;min-height:60px;
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.012));
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14), 0 6px 18px rgba(0,0,0,.35);
+  transition:transform .18s var(--ease-out), border-color .2s, box-shadow .2s}
+.entry:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.28)}
+.entry.playing{border-color:color-mix(in srgb,var(--accent) 78%,white 6%)}
+.entry.playing::after{content:'';position:absolute;inset:-1px;border-radius:15px;pointer-events:none;
+  border:1.5px solid color-mix(in srgb,var(--accent) 78%,white 6%);
+  box-shadow:0 0 24px color-mix(in srgb,var(--accent) 38%,transparent),
+             0 0 8px color-mix(in srgb,var(--accent) 55%,transparent),
+             inset 0 0 18px color-mix(in srgb,var(--accent) 12%,transparent);
+  animation:scplaying 2.6s ease-in-out infinite}
+@keyframes scplaying{
+  0%,100%{box-shadow:0 0 22px color-mix(in srgb,var(--accent) 34%,transparent),
+                    0 0 7px color-mix(in srgb,var(--accent) 50%,transparent),
+                    inset 0 0 16px color-mix(in srgb,var(--accent) 10%,transparent)}
+  50%{box-shadow:0 0 30px color-mix(in srgb,var(--accent) 46%,transparent),
+                 0 0 12px color-mix(in srgb,var(--accent) 66%,transparent),
+                 inset 0 0 24px color-mix(in srgb,var(--accent) 16%,transparent)}}
+/* 当前曲进度条（照抄 .sc-prog :320-328） */
+.entry-prog{position:absolute;left:0;right:0;bottom:0;height:3px;border-radius:0 0 14px 14px;
+  background:rgba(255,255,255,.07);overflow:hidden;opacity:0;transition:opacity .3s}
+.entry.playing .entry-prog{opacity:1}
+.entry-prog .fill{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  box-shadow:0 0 10px color-mix(in srgb,var(--primary) 60%,transparent)}
+.entry-n{color:var(--dim);font-size:11px;width:20px;text-align:right;flex:none}
+.entry-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.entry-title{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry.playing .entry-title{color:var(--accent)}
+.entry-artist{font-size:11px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+/* 行操作沉底（照抄 .sc-acts :334-340：悬停才现、右下留边） */
+.entry-acts{position:absolute;right:10px;bottom:8px;display:flex;gap:6px;z-index:4;
+  opacity:0;pointer-events:none;transition:opacity .2s ease}
+.entry:hover .entry-acts{opacity:1;pointer-events:auto}
+.empty{color:var(--dim);font-size:12px;text-align:center;padding:20px}
+
+.panel-section{padding:12px 0;border-bottom:1px solid var(--line)}
+.panel-section h3{font-size:12px;font-weight:500;color:var(--dim);margin:0 0 10px;letter-spacing:.05em}
+.accent-list{display:flex;gap:10px;flex-wrap:wrap}
+.accent-dot{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.accent-dot.active{border-color:#fff;box-shadow:0 0 10px rgba(255,255,255,.4)}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap}
+.bg-chip,.ontop-chip,.chip{padding:6px 12px;border-radius:8px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.bg-chip.active,.ontop-chip.active,.chip.active{color:#fff;border-color:var(--accent);
+  background:rgba(139,125,255,.16)}
+.switch{min-width:44px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.switch.on{color:#fff;border-color:var(--accent);background:rgba(139,125,255,.24)}
+
+.eq-tabs{display:flex;gap:6px;margin:12px 0}
+.eq-tab{flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.eq-tab.active{color:#fff;border-color:var(--accent);background:rgba(139,125,255,.16)}
+.eqp-bands{display:flex;gap:6px;justify-content:space-between;min-height:100px}
+.eq-band{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.eq-band label{font-size:9px;color:var(--dim)}
+.eq-band input{writing-mode:vertical-lr;direction:rtl;width:16px;height:90px;accent-color:var(--accent)}
+.eq-band .db{font-size:9px;color:var(--dim)}
+.eqp-presets{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.eqp-dyn{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:11px;color:var(--dim)}
+.eqp-dyn input{flex:1;accent-color:var(--accent)}
+
+.set-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.set-tab{padding:6px 11px;border-radius:8px;border:1px solid var(--line);
+  background:transparent;color:var(--dim);font-size:11px;cursor:pointer}
+.set-tab.active{color:#fff;border-color:var(--accent);background:rgba(139,125,255,.16)}
+.set-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.set-row label{flex:0 0 110px;font-size:11px;color:var(--dim)}
+.set-row input[type=text]{flex:1;min-width:0;padding:6px 9px;border-radius:6px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);font-size:11px}
+
+/* ═══════ 核心视觉系统：SVG 进度环（照抄 index.html:554-586 / 1802-1823） ═══════ */
+.ring-host{position:relative;width:100%;height:56px;margin:-6px 0 8px;pointer-events:none;z-index:5}
+.ring-host svg{display:block;width:100%;height:100%;overflow:visible}
+.ring-host path{fill:none;stroke-linecap:round}
+.ring-path{stroke:rgba(255,255,255,.15);stroke-width:3}
+.ring-progress{stroke:url(#ringGrad);stroke-width:3;filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}
+.ring-glow{stroke:url(#ringGlowGrad);stroke-width:1.6;opacity:.95;
+  filter:blur(1.1px) drop-shadow(0 0 3px rgba(255,255,255,.6))}
+.ring-bloom{stroke:url(#ringGrad);stroke-width:10;opacity:.42;filter:blur(6px)}
+.ring-bloom2{stroke:url(#ringGrad);stroke-width:26;opacity:.26;filter:blur(14px)}
+.ring-playhead{fill:#fff;stroke:var(--framePlayColor,#ffd166);stroke-width:3;opacity:0;
+  filter:drop-shadow(0 0 10px var(--framePlayColor,#ffd166))}
+.ring-playhead-core{fill:#fff}
+.ring-host:hover .ring-playhead{stroke-width:4;opacity:.75}
+
+/* ═══════ 弹簧弧形卡片墙（照抄 index.html:225-353） ═══════ */
+.cascade-cards{position:relative;height:300px;margin-top:8px;overflow:hidden;
+  perspective:1500px;perspective-origin:50% 50%;transform-style:preserve-3d}
+.cascade-cards.hidden{display:none}
+.scard{
+  position:absolute;left:0;top:0;width:372px;height:120px;
+  border-radius:20px;display:flex;gap:15px;padding:0 18px;
+  background:rgba(20,18,34,.9);border:1px solid rgba(255,255,255,.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 18px 48px rgba(0,0,0,.55),
+             0 0 26px color-mix(in srgb,var(--accent) 24%,transparent);
+  visibility:hidden;will-change:transform,opacity;cursor:pointer;
+  transition:border-color .25s ease,box-shadow .25s ease;transform-style:preserve-3d;
+}
+/* 斜向色洗 + 38px 网格（照抄 :245-250） */
+.scard::before{content:'';position:absolute;inset:0;border-radius:20px;pointer-events:none;
+  background:linear-gradient(118deg,color-mix(in srgb,var(--tone-a) 42%,transparent) 20%,transparent 40%,
+    color-mix(in srgb,var(--tone-b) 30%,transparent) 76%,transparent),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 38px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 38px);
+  opacity:.62}
+/* 当前播放卡双层辉光 + 呼吸（照抄 :265-281） */
+.scard.playing::after{content:'';position:absolute;inset:-1px;border-radius:21px;pointer-events:none;z-index:1;
+  border:1.5px solid color-mix(in srgb,var(--accent) 78%,white 6%);
+  box-shadow:0 0 24px color-mix(in srgb,var(--accent) 38%,transparent),
+             0 0 8px color-mix(in srgb,var(--accent) 55%,transparent),
+             inset 0 0 18px color-mix(in srgb,var(--accent) 12%,transparent);
+  animation:scplaying 2.6s ease-in-out infinite}
+.scard .sc-cover{position:relative;z-index:2;width:88px;height:88px;border-radius:16px;
+  overflow:hidden;flex:none;box-shadow:0 6px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.14);
+  align-self:center}
+.scard .sc-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.scard .sc-info{position:relative;z-index:2;flex:1;min-width:0;padding-bottom:18px;align-self:center}
+.scard .sc-name{font-size:16px;font-weight:740;color:rgba(255,255,255,.97);letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard.playing .sc-name{color:var(--accent)}
+.scard .sc-sub{font-size:12.5px;color:rgba(255,255,255,.56);margin-top:5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard .sc-chip{position:relative;z-index:2;flex:none;font-size:10px;letter-spacing:2px;
+  padding:4px 9px;border-radius:9px;background:color-mix(in srgb,var(--primary) 30%,transparent);
+  border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.85);align-self:center}
+.scard .sc-eq{display:none;align-items:flex-end;gap:2px;height:14px;position:relative;z-index:2;align-self:center}
+.scard.playing .sc-eq{display:flex}
+.scard .sc-eq i{width:2.5px;border-radius:2px;background:var(--accent);transform-origin:bottom;
+  animation:sceq .9s ease-in-out infinite}
+.scard .sc-eq i:nth-child(2){animation-delay:.15s}.scard .sc-eq i:nth-child(3){animation-delay:.3s}
+.scard .sc-eq i:nth-child(4){animation-delay:.45s}.scard .sc-eq i:nth-child(5){animation-delay:.6s}
+@keyframes sceq{0%,100%{height:30%}50%{height:100%}}
+.scard .sc-prog{position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:rgba(255,255,255,.07);z-index:3;opacity:0;transition:opacity .3s}
+.scard.playing .sc-prog{opacity:1}
+.scard .sc-prog .fill{display:block;height:100%;width:0;
+  background:linear-gradient(90deg,var(--tone-a) 0%,var(--tone-b) 100%);
+  box-shadow:0 0 10px color-mix(in srgb,var(--tone-a) 60%,transparent);transition:width .35s ease}
+
+/* 歌词海报画布：全屏底层、文字由 poster.js 画，UI 层在上方 */
+#poster-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}

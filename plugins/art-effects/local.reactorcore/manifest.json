@@ -1,0 +1,19 @@
+{
+  "id": "local.reactorcore",
+  "name": "堆芯",
+  "version": "1.0.0",
+  "type": "art-effect",
+  "slot": "ripple",
+  "execution": "hot-limited",
+  "capabilities": [
+    "dom:body",
+    "css.vars",
+    "bus:mood@2hz"
+  ],
+  "entry": "plugin.js",
+  "hostApi": ">=1.0.0",
+  "source": "local",
+  "description": "709 根控制棒堆芯，14 维情绪轴驱动连续动画。视觉核心改编自 wzk112/reactor-audio-visualizer (MIT, Andy Wang)，见 LICENSE.txt。",
+  "license": "MIT (visual core, Andy Wang) + ALL_RIGHTS_RESERVED (MusicAI wiring)",
+  "repository": "https://github.com/wzk112/reactor-audio-visualizer"
+}

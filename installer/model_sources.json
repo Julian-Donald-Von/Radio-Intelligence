@@ -1,0 +1,96 @@
+{
+  "_note": "已考证来源=仓库/脚本中明确记载；manual=本机文件存在但公开 URL 未考证，禁止编造。sha256 来自本机发布包权威文件（CLAP 与官方脚本记载一致）。",
+  "python": {
+    "version": "3.13.14",
+    "url": "https://www.python.org/ftp/python/3.13.14/python-3.13.14-amd64.exe",
+    "sha256": "c54d9b9bbb8a36e6489363ddd01139707fd781d72f1f9e90c7ec65d0061368e0",
+    "bytes": 29225624,
+    "source": "python.org 官方发布页 2026-11-19 查证",
+    "silent_args": "/quiet InstallDir={DIR} PrependPath=0 Include_test=0 Include_doc=0"
+  },
+  "models": [
+    {
+      "id": "clap",
+      "label": "LAION-CLAP 音频理解 (1.86 GB)",
+      "required_by": "水体情绪可视化 / 音频语义检索",
+      "path": "models/clap/630k-audioset-best.pt",
+      "url": "https://huggingface.co/lukewys/laion_clap/resolve/main/630k-audioset-best.pt",
+      "sha256": "8053c9775516af2f4902e1e8281e356cc1bf7a85e8b761908170767b77c3f037",
+      "bytes": 1863587645,
+      "source": "tools/download_clap.py 官方脚本（URL+SHA 均记载且本机文件哈希一致）",
+      "verified": true,
+      "default_checked": true
+    },
+    {
+      "id": "tts",
+      "label": "Qwen3-TTS 语音 (1.5 GB)",
+      "required_by": "AI 导听发声（必需）",
+      "files": [
+        {
+          "path": "models/qwen3_tts_1.7b/Qwen3-TTS-12Hz-1.7B-Base-Q4_K_M.gguf",
+          "sha256": "13363371e3e1f9c71d800aeba3966e492defb2974cdf574a4f564d1a69cf28d1",
+          "bytes": 1035965376,
+          "url": "https://hf-mirror.com/NANI-Nithin/Qwen3-TTS-12Hz-1.7B-Base-GGUF/resolve/main/Qwen3-TTS-12Hz-1.7B-Base-Q4_K_M.gguf"
+        },
+        {
+          "path": "models/qwen3_tts_1.7b/mmproj-Qwen3-TTS-12Hz-1.7B-Base-Q8_0.gguf",
+          "sha256": "8ac65adec6dc64c2f9c5bb09475e820779d73af7a47da80a07b25847eb324612",
+          "bytes": 492625888,
+          "url": "https://hf-mirror.com/NANI-Nithin/Qwen3-TTS-12Hz-1.7B-Base-GGUF/resolve/main/mmproj-Qwen3-TTS-12Hz-1.7B-Base-Q8_0.gguf"
+        }
+      ],
+      "source": "NANI-Nithin/Qwen3-TTS-12Hz-1.7B-Base-GGUF (HF mirror, LFS SHA verified)",
+      "verified": true,
+      "default_checked": true
+    },
+    {
+      "id": "mert330",
+      "label": "MERT-v1-330M (1.26 GB)",
+      "required_by": "情绪感知/语义骨干",
+      "repo": "m-a-p/MERT-v1-330M",
+      "path": "models/hf/mert330/pytorch_model.bin",
+      "sha256": "0c03774d821a6ad972cb48220b128a10ebea2c790116bd0fd35e5a013f8017f6",
+      "bytes": 1261846489,
+      "source": "training/download_models.py 定义 repo + 本机 sha；HF endpoint 可用 hf-mirror.com 前缀",
+      "verified": "repo-verified-sha-local",
+      "default_checked": false
+    },
+    {
+      "id": "muq",
+      "label": "MuQ-large-msd-iter (1.33 GB)",
+      "required_by": "情绪感知/语义骨干",
+      "repo": "OpenMuQ/MuQ-large-msd-iter",
+      "path": "models/hf/muq/model.safetensors",
+      "sha256": "273febab2be02872c37d2c37e48a9d6c52c1c9392f3eeeabd498efa281ccb7a6",
+      "bytes": 1333825096,
+      "source": "training/download_models.py + docs/small_backbone_research.md（CC-BY-NC-4.0，非商用）",
+      "verified": "repo-verified-sha-local",
+      "license_note": "CC-BY-NC-4.0 非商用授权，商用需另行取得许可",
+      "default_checked": false
+    },
+    {
+      "id": "roberta",
+      "label": "RoBERTa-base (0.5 GB)",
+      "required_by": "文本语义轴",
+      "repo": "roberta-base",
+      "path": "models/hf/roberta-base/pytorch_model.bin",
+      "sha256": "278b7a95739c4392fae9b818bb5343dde20be1b89318f37a6d939e1e1b9e461b",
+      "bytes": 501200538,
+      "source": "tools/download_roberta.py 定义 repo + 本机 sha",
+      "verified": "repo-verified-sha-local",
+      "default_checked": false
+    },
+    {
+      "id": "llm",
+      "label": "Qwen3.6-35B-A3B Q4_K_M (21.2 GB, download)",
+      "required_by": "AI 导听文案生成（无它则只播音乐/默认口播）",
+      "path": "models/llm/Qwen3.6-35B-A3B.gguf",
+      "sha256": "031265717b560eb8f5fc7a2a72da2875502fed32cd968cec4f3e9c9f1d2e893e",
+      "bytes": 21166758176,
+      "source": "AtomicChat/Qwen3.6-35B-A3B-GGUF Q4_K_M (HF mirror, LFS SHA verified)",
+      "verified": true,
+      "default_checked": false,
+      "url": "https://hf-mirror.com/AtomicChat/Qwen3.6-35B-A3B-GGUF/resolve/main/Qwen3.6-35B-A3B-Q4_K_M.gguf"
+    }
+  ]
+}

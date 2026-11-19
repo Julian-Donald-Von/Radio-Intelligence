@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh" data-page-node-id="fVV3cSC9YkzMuOD22EN4mw">
+<head data-page-node-id="vNFEEF3vBafqNHUE0K1q9O">
+<meta charset="utf-8" data-page-node-id="3lcN7fHXdwowAyRnTXJkMt">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="crHAmTJDeEvAet0cVYYizi">
+<title>R105 / E-α 彩蛋 Demo（竖排诗句 · Apple 致敬 · 星露谷棕鸡 · 声明）</title>
+<!-- ══════════════════════════════════════════════════════════════════
+     本文件是 index.html 彩蛋层的「忠实镜像 demo」，无需起服务即可在浏览器预览。
+     下方的 <style>（egg 段）与 index.html 的 R105 / E-α <style> 逐字一致；
+     仅额外加了 demo 布局样式（页面底、区块标题、卡片网格）。
+     ══════════════════════════════════════════════════════════════════ -->
+<style>
+#eggs-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;transition:opacity .8s ease;opacity:1;padding:0 6vw}
+.eggs-card{position:relative;max-width:min(80vw,720px);min-width:min(56vw,420px);padding:36px 42px 30px;border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.45),0 2px 0 rgba(255,255,255,.06) inset;text-align:center;letter-spacing:.14em;transition:background .6s ease,color .6s ease,border-color .6s ease;opacity:1}
+.eggs-poem-text{font-size:clamp(18px,2.9vw,31px);line-height:2.0;font-weight:400;white-space:pre-line}
+.eggs-poem-src{margin-top:16px;font-size:12px;letter-spacing:.1em;opacity:.62;font-family:-apple-system,system-ui,sans-serif}
+.eggs-seal{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:15px;font-family:serif;opacity:.88;line-height:1}
+/* 日式·藍染 indigo */
+.card-jp-indigo{background:linear-gradient(160deg,#1d2c4d,#0e1830);color:#f1e7d0;border:1px solid rgba(212,175,110,.45);font-family:"Hiragino Mincho ProN","Yu Mincho","Songti SC",serif}
+.card-jp-indigo .eggs-seal{background:#b03a2e;color:#fff}
+/* 日式·和紙 washi cream */
+.card-jp-washi{background:linear-gradient(160deg,#efe7d6,#e3d8c0);color:#2b2622;border:1px solid rgba(120,90,60,.35);font-family:"Hiragino Mincho ProN","Yu Mincho","Songti SC",serif}
+.card-jp-washi .eggs-seal{background:#b03a2e;color:#fff}
+/* 日式·朱 vermilion frame */
+.card-jp-vermilion{background:#14100e;color:#f3ead6;border:2px solid #c0392b;font-family:"Hiragino Mincho ProN","Yu Mincho","Songti SC",serif}
+.card-jp-vermilion .eggs-seal{background:#c0392b;color:#fff}
+/* 日式·桜 sakura */
+.card-jp-sakura{background:linear-gradient(160deg,#fbeef2,#f4dde6);color:#3a2b2f;border:1px solid rgba(190,120,140,.4);font-family:"Hiragino Mincho ProN","Yu Mincho","Songti SC",serif}
+.card-jp-sakura .eggs-seal{background:#b03a2e;color:#fff}
+/* 中式·宣纸 xuan (light) */
+.card-zh-xuan{background:linear-gradient(160deg,#f6f1e6,#ece4d2);color:#1c1a17;border:1px solid rgba(90,70,50,.35);font-family:"Songti SC","STSong","SimSun",serif}
+.card-zh-xuan .eggs-seal{background:#b03a2e;color:#fff}
+/* 中式·墨 ink (dark) */
+.card-zh-ink{background:linear-gradient(160deg,#23201c,#15120f);color:#ece3d2;border:1px solid rgba(220,200,170,.4);font-family:"Songti SC","STSong","SimSun",serif}
+.card-zh-ink .eggs-seal{background:#b03a2e;color:#fff}
+/* 英式·letterpress (slate) */
+.card-en-letterpress{background:linear-gradient(160deg,#222b38,#161c26);color:#e9e2d2;border:1px solid rgba(200,190,160,.35);font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif}
+.card-en-letterpress .eggs-seal{background:#c8a24a;color:#161c26}
+/* 英式·letterpress ivory */
+.card-en-ivory{background:linear-gradient(160deg,#f4efe2,#e9e1cd);color:#2a2620;border:1px solid rgba(120,100,60,.35);font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif}
+.card-en-ivory .eggs-seal{background:#2a2620;color:#f4efe2}
+/* 个人气质·案（学者/法学 warm wood）——纯 CSS，不取个人图片 */
+.card-study{background:linear-gradient(160deg,#3a2f25,#241c15);color:#ecdfca;border:1px solid rgba(200,170,120,.4);font-family:"Songti SC","STSong",serif}
+.card-study .eggs-seal{background:#8a6d3b;color:#fff}
+/* 星露谷·田园像素致敬（纯 CSS，不取游戏资源） */
+.card-stardew{background:linear-gradient(160deg,#3f5137,#2c3a28);color:#f3ecd6;border:2px solid #7fae5a;font-family:"Songti SC",system-ui,sans-serif;image-rendering:pixelated}
+.card-stardew .eggs-seal{background:#e85d75;color:#fff}
+/* 非诗·纯文字标签卡（较小概率出现，短↔短，不动逻辑） */
+.card-plain{background:rgba(20,24,38,.92);color:rgba(236,234,242,.92);border:1px solid rgba(140,160,220,.35);font-family:-apple-system,system-ui,sans-serif;letter-spacing:.04em}
+.card-plain .eggs-seal{display:none}
+#eggs-overlay.dim{opacity:.16}
+#eggs-overlay.dim .eggs-card{opacity:.9}
+/* ═══ R105 / E-α 扩展 · Apple 致敬（六色彩虹发丝线）+ 隐藏 Hello + 星露谷棕鸡（真实 gif）+ 竖排诗句 + 声明 ═══ */
+/* 竖排 CJK 诗（日本語/中文）：右起竖列，句读以 \n 分列 */
+.eggs-poem-text.v{writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.12em;line-height:1.8;padding-top:28px;max-height:64vh}
+/* Apple 1977 六色彩虹发丝线（致敬，恒定出现在换肤卡最顶，极克制） */
+.eggs-rainbow{height:3px;width:100%;margin-top:14px;flex:0 0 auto;
+  background:linear-gradient(90deg,#61BB46 0 16.66%,#F9C00C 16.66% 33.33%,#F5821F 33.33% 50%,#E03A3C 50% 66.66%,#963D97 66.66% 83.33%,#009DDC 83.33% 100%)}
+/* 关于 / 声明 区块（纯静态，ui-settings.js 不接管此 gid） */
+.eggs-declaration{margin-top:14px;font-family:-apple-system,system-ui,sans-serif;font-size:12px;line-height:1.9;opacity:.74;text-align:center;letter-spacing:.01em}
+.eggs-declaration p{margin:0}
+.eggs-declaration .eggs-viva{margin-top:6px;opacity:.92;font-style:italic}
+/* （.eggs-homage 样式已移除：Python/Linux/Acknowledgements/Open Source 致敬仅计划文档设计，未落任何 UI） */
+/* 星露谷棕鸡（真实动画 gif，取自 Stardew Valley wiki；仅 demo） */
+.eggs-chick{display:block;width:96px;height:auto;margin:14px auto 2px;image-rendering:pixelated}
+/* Apple 1984「Hello.」隐藏问候层（隐蔽开关触发，点击/Esc 关闭） */
+.eggs-hello{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;background:#fbfbfd;cursor:pointer;opacity:0;transition:opacity .5s ease}
+.eggs-hello.show{display:flex;opacity:1}
+.eggs-hello .hello-word{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:700;font-size:clamp(48px,12vw,140px);color:#1d1d1f;letter-spacing:-.02em}
+.eggs-hello .hw-svg{width:min(78vw,440px);height:auto;display:block;margin:0 auto}
+.eggs-hello .hw{fill:none;stroke:#1d1d1f;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.eggs-hello svg.hw-svg.draw .hw{animation:eggsHelloDraw .5s ease forwards}
+@keyframes eggsHelloDraw{to{stroke-dashoffset:0}}
+.eggs-hello .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.eggs-hello .hello-sub{margin-top:12px;font-size:13px;color:#86868b;font-family:-apple-system,system-ui,sans-serif;opacity:0}
+.eggs-hello.show .hello-sub{animation:eggsHelloSub .45s ease 2.05s forwards}
+@keyframes eggsHelloSub{to{opacity:1}}
+</style>
+<style>
+/* demo 布局样式（仅本预览页用，不属于彩蛋层） */
+* { box-sizing: border-box; }
+body{margin:0;background:#0b0e16;color:#cfd3e0;font-family:-apple-system,system-ui,"Songti SC",sans-serif;padding:32px 20px 80px}
+h1{font-size:22px;font-weight:600;letter-spacing:.02em;margin:0 0 4px}
+.sub{opacity:.6;font-size:13px;margin:0 0 28px}
+section{margin:34px 0 10px}
+.sec-h{font-size:15px;font-weight:600;color:#aeb6cf;border-left:3px solid #6b7bd6;padding-left:10px;margin-bottom:14px}
+.note{opacity:.62;font-size:12.5px;line-height:1.7;margin:6px 0 16px;max-width:760px}
+.grid{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.grid .eggs-card{margin:0}
+.rainbow-wrap{max-width:520px;background:#161a24;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px}
+.rainbow-cap{font-size:12px;opacity:.6;margin-top:8px}
+.about-wrap{max-width:520px;background:#161a24;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:18px}
+.about-wrap .set-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.about-wrap .set-label{opacity:.85}
+.tk{width:38px;height:22px;border-radius:12px;background:#394056;display:inline-block;position:relative}
+.tk::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#cfd3e0;transition:left .2s}
+.tk.on{background:#5a8dee}
+.tk.on::after{left:18px}
+button.demo-btn{margin-top:10px;background:#2a3146;color:#dfe3ef;border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:9px 16px;font-size:13px;cursor:pointer}
+button.demo-btn:hover{background:#34405e}
+.foot{margin-top:50px;opacity:.5;font-size:12px;line-height:1.8;border-top:1px solid rgba(255,255,255,.08);padding-top:16px}
+code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:12px}
+/* demo：mock「换肤」卡，演示彩虹线恒定钉在最顶 */
+.mock-theme{max-width:520px;background:#161a24;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden;margin-top:14px}
+.mock-theme .mock-head{padding:10px 14px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.mock-theme .mock-body{padding:0 14px 14px}
+.mock-theme .eggs-rainbow{margin:0 0 12px}
+.mock-theme .mock-row{padding:8px 0;font-size:13px;opacity:.8;border-bottom:1px dashed rgba(255,255,255,.06)}
+</style>
+</head>
+<body data-page-node-id="XwIVT2xln3Uiln82XtVSgB">
+<h1 data-page-node-id="p0i2F0DChcRKuQeIqOkkm4">R105 / E-α 彩蛋 Demo</h1>
+<p class="sub" data-page-node-id="Cs63HNdY9PdqMOWcN3PCoJ">index.html 彩蛋层忠实镜像 · 无需起服务即可预览 · 真机在「设置 → 关于」仅保留 Apple 六色彩虹发丝线 + 声明致敬（Python/Linux/Acknowledgements/Open Source 致敬仅计划文档设计，未落 UI）；诗卡/星露谷棕鸡/1984「Hello.」仅本 demo 预览</p>
+
+<!-- ───────── 1. 竖排 CJK 诗（日 / 中）：一句一列 ───────── -->
+<section data-page-node-id="idvx1VbteFc6BPLLhGLWSY">
+  <div class="sec-h" data-page-node-id="xCtDhbDAxFzjWzAVpPcYx2">① 竖排 CJK 诗（古日 / 古汉）：右起竖列，句读以换行分列（万葉集＝一句一列）</div>
+  <p class="note" data-page-node-id="5AgwjPGHxOzoio3sgbnbjn">古中文 / 古日语竖向书写、并做现代观感的断句。万葉集原无标点，按语意断成「一句一列」；王维《竹里馆》、李白《听蜀僧濬弹琴》按联分列。竖排用 <code data-page-node-id="wRcxGum9fWbUHhrmzUa0Jr">writing-mode:vertical-rl</code>，第一列在右、向左推进。</p>
+  <div class="grid" id="grid-vertical" data-page-node-id="QVHonbVs3BGDE9Bkr6grIB"></div>
+</section>
+
+<!-- ───────── 2. 横排 英文诗 + 非诗标签卡 ───────── -->
+<section data-page-node-id="mjJ7blciFP6mIOolxCC4P2">
+  <div class="sec-h" data-page-node-id="CU1G243pA4Gpl0JCXNqNTP">② 横排：英文诗（O'Shaughnessy《Ode》）＋ 非诗纯文字标签卡（≈8% 概率）</div>
+  <p class="note" data-page-node-id="4KprnE7KGKjYnPcKrOGSih">英文诗保持横排；另有「非诗标签池」以较小概率替换加载位（短↔短，不动任何逻辑类文字）。</p>
+  <div class="grid" id="grid-horizontal" data-page-node-id="q1laenVQCY9kXvKYeZavBv"></div>
+</section>
+
+<!-- ───────── 3. Apple 六色彩虹发丝线 ───────── -->
+<section data-page-node-id="WGNaZWS5UZNTtjD3ChCaNW">
+  <div class="sec-h" data-page-node-id="NcC9PPUORPq46DtHA46Unv">③ Apple 1977 六色彩虹发丝线（致敬，恒定出现在「换肤」卡最顶）</div>
+  <div class="rainbow-wrap" data-page-node-id="yNXVBAGQQ5VfDRFQ3W1EMp">
+    <div class="eggs-rainbow" data-page-node-id="9ntt1Dy9iQEZr2DpBODEuo"></div>
+    <div class="rainbow-cap" data-page-node-id="sPxxayQm7HD8bsmxFdGwfg">绿 #61BB46 · 黄 #F9C00C · 橙 #F5821F · 红 #E03A3C · 紫 #963D97 · 蓝 #009DDC</div>
+  </div>
+  <div class="mock-theme" data-page-node-id="mockTheme">
+    <div class="mock-head">换肤</div>
+    <div class="mock-body">
+      <div class="eggs-rainbow" aria-hidden="true"></div>
+      <div class="mock-row">皮肤</div>
+      <div class="mock-row">背景效果</div>
+      <div class="mock-row">叠层效果</div>
+    </div>
+  </div>
+  <div class="rainbow-cap">真机：彩虹线恒定钉在「换肤」抽屉最顶部（见上方 mock），不再位于「设置」最底。</div>
+</section>
+
+<!-- ───────── 4. 声明 + 星露谷棕鸡 ───────── -->
+<section data-page-node-id="qnPQpjZr5u6hs7ATdyg6pp">
+  <div class="sec-h" data-page-node-id="eojCbFVqkzM6sZqfd4XysH">④ 声明彩蛋（订正版）＋ 星露谷棕鸡（真实动画 gif，取自 wiki）</div>
+  <div class="about-wrap" data-page-node-id="Kwvrk9FuExooYWTD6NQRci">
+    <div class="set-row" data-page-node-id="VIJeZvQYfuwttIqPNR2M4I"><span class="set-label" data-page-node-id="NPjv7R2ohwjfQsA2Ewt1qX">开机问候（隐蔽开关 → 触发 Hello.）</span><span class="tk on" id="demo-switch" data-page-node-id="lPrSTix14drNBKX41FMjcv"></span></div>
+    <div class="eggs-declaration" id="eggs-declaration" data-page-node-id="7bZ6k9m8HNjMqIJMqU0OS4">
+      <p data-page-node-id="WA2bQMeM2DoPfknbobOrnW">Originally designed by Homo sapiens</p>
+      <p data-page-node-id="A4q9vsm5qD7cTfRAV2yPOh">assembled and implemented by Silicon-based life</p>
+      <p class="eggs-viva" data-page-node-id="CIlCM37hM4rDJHSjl2xHRT">¡Viva la vida y la cooperación entre especies!</p>
+      <img class="eggs-chick" id="eggs-chick" src="eggs/stardew_chick.gif" alt="Stardew Valley 棕鸡" aria-hidden="true" data-page-node-id="Npvqu1FxZFuiWQAa5Gio7M">
+    </div>
+  </div>
+</section>
+
+<!-- ───────── 5. 隐藏 Hello 触发 ───────── -->
+<section data-page-node-id="Aj3vwAo4FBq3pbN9W6PI3F">
+  <div class="sec-h" data-page-node-id="ATDxYtNrUWXwPD54Ldw2RO">⑤ 隐藏「Hello.」问候（1984 致敬，非首发）</div>
+  <p class="note" data-page-node-id="nF3udX5EXFqNs4GekKcixD">真机中：展开「换肤 → 叠层效果 → 高级（工程对照）」折叠时，有 <b>1% 概率</b>弹出 Apple「Hello.」。下方两种模拟：① 直接触发；② 模拟「高级折叠展开」的一次掷骰（按 1% 概率，可连点观察）。点按覆盖层或按 Esc 关闭。矢量优先加载 <code>webapi/static/eggs/hello/&lt;lang&gt;.svg</code>（SF-Hello），缺失时显示内联占位。</p>
+  <button class="demo-btn" id="demo-hello-btn" data-page-node-id="7eDHOZPu7bJehFrJu6x0GA">触发 Hello.（直接）</button>
+  <button class="demo-btn" id="demo-adv-btn" data-page-node-id="advBtnDemo">模拟「高级折叠展开」（1% 掷骰）</button>
+</section>
+
+<div class="foot" data-page-node-id="gnYk0DTcdF4vgShli3aDOg">
+  本 demo 是 index.html 彩蛋层的「忠实镜像预览」，诗卡样式、竖排 CSS、Apple 彩虹、声明、星露谷棕鸡（真实动画 gif：`eggs/stardew_chick.gif`，取自 Stardew Valley wiki 的 Brown Chicken.gif）、Hello 覆盖层均直接复用同套样式。<br data-page-node-id="Hm6iZN5udKDATLHvWDFtuT">
+  <b data-page-node-id="O0MO0nJ3OumbZiyNCM7qKI">分层边界：</b>真机（「设置 → 关于」）仅保留 ① Apple 六色彩虹发丝线 ② 声明致敬（Homo sapiens / Silicon-based life / ¡Viva la…!）；诗卡、星露谷棕鸡（真实 gif）、1984「Hello.」仅在本 demo 预览，<b>不进真机</b>。（Python / Linux / Acknowledgements / Open Source 致敬 = 仅计划文档设计，未落任何 UI，见 §13）<br data-page-node-id="8vId8Js8WkrG5zzV6DcNa1">
+  验收：<code data-page-node-id="eFSI0GQE1WGH6AJThnu2Ur">verify_eggs.py</code> A–I（实际 UI 守卫 A–H + demo 镜像守卫 I）全过（当前 77/0）。
+</div>
+
+<!-- Hello 覆盖层（与 index.html 同结构） -->
+<div class="eggs-hello" id="eggs-hello" aria-hidden="true" data-page-node-id="FBwJIZAYwQ4llRAWoJgmdu">
+  <div class="hello-word" data-page-node-id="ql8tbIqTxw8rP9zT1mAzUG">
+    <span class="sr-only">Hello.</span>
+    <svg class="hw-svg" viewBox="0 0 272 120" role="img" aria-label="Hello.">
+      <path class="hw" pathLength="1" style="animation-delay:0s"     d="M20,95 L20,28 M62,95 L62,28 M20,62 L62,62"/>
+      <path class="hw" pathLength="1" style="animation-delay:.5s"    d="M118,62 C118,44 88,44 88,62 C88,80 116,80 114,66"/>
+      <path class="hw" pathLength="1" style="animation-delay:.9s"    d="M150,95 C146,78 150,55 152,30"/>
+      <path class="hw" pathLength="1" style="animation-delay:1.15s"  d="M180,95 C176,78 180,55 182,30"/>
+      <path class="hw" pathLength="1" style="animation-delay:1.4s"   d="M242,62 C242,44 210,44 210,62 C210,80 242,80 242,62 Z"/>
+      <path class="hw" pathLength="1" style="animation-delay:1.75s"  d="M262,92 m-3.2,0 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0"/>
+    </svg>
+  </div>
+  <div class="hello-sub" data-page-node-id="tztVOH0mizBm2TAupBtXOc">— 1984</div>
+</div>
+
+<script>
+/* ── 诗数据（与 ui-eggs.js 的 POEMS 一致；\n 即竖排分列） ── */
+var POEMS = [
+  { id:'ama_no_umi', lang:'ja', vertical:true,
+    text:'天の海に\n雲の波立ち\n月の舟\n星の林に\n漕ぎ隠る見ゆ',
+    src:'万葉集 巻七・一〇六八・柿本人麻呂', seal:'詩',
+    family:['card-jp-indigo','card-jp-washi','card-jp-vermilion','card-jp-sakura'] },
+  { id:'yuuzukuyo', lang:'ja', vertical:true,
+    text:'夕月夜\n心もしのに\n白露の置くこの庭に\nこほろぎ鳴くも',
+    src:'万葉集 巻八・一五五二・湯原王', seal:'詩',
+    family:['card-jp-indigo','card-jp-washi','card-jp-sakura'] },
+  { id:'aki_no_no', lang:'ja', vertical:true,
+    text:'秋の野に咲ける秋萩\n秋風に靡ける上に\n秋の露置けり',
+    src:'万葉集 巻八・一五九七・大伴家持', seal:'詩',
+    family:['card-jp-washi','card-jp-vermilion'] },
+  { id:'ishibashiru', lang:'ja', vertical:true,
+    text:'石走る垂水の上の\nさわらびの萌え出づる\n春になりにけるかも',
+    src:'万葉集 巻八・一四一八・志貴皇子', seal:'詩',
+    family:['card-jp-sakura','card-jp-washi','card-jp-indigo'] },
+  { id:'furuike', lang:'ja', vertical:true,
+    text:'古池や\n蛙飛びこむ\n水の音',
+    src:'俳句・松尾芭蕉', seal:'俳',
+    family:['card-jp-indigo','card-jp-washi','card-jp-vermilion'] },
+  { id:'zhuliguan', lang:'zh', vertical:true,
+    text:'独坐幽篁里，\n弹琴复长啸。\n深林人不知，\n明月来相照。',
+    src:'唐・王维《竹里馆》', seal:'诗',
+    family:['card-zh-xuan','card-zh-ink'] },
+  { id:'tingseng', lang:'zh', vertical:true,
+    text:'蜀僧抱绿绮，西下峨眉峰。\n为我一挥手，如听万壑松。\n客心洗流水，馀响入霜钟。\n不觉碧山暮，秋云暗几重。',
+    src:'唐・李白《听蜀僧濬弹琴》', seal:'诗',
+    family:['card-zh-xuan','card-zh-ink'] },
+  { id:'oshaughnessy', lang:'en', vertical:false,
+    text:'We are the music makers,\nAnd we are the dreamers of dreams,\nWandering by lone sea-breakers,\nAnd sitting by desolate streams;',
+    src:"A. O’Shaughnessy · “Ode” (1874, public domain)", seal:'♪',
+    family:['card-en-letterpress','card-en-ivory'] }
+];
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function makeCard(p, familyOverride){
+  var card = document.createElement('div');
+  card.className = 'eggs-card ' + (familyOverride || pick(p.family));
+  var seal = document.createElement('div'); seal.className='eggs-seal'; seal.textContent = p.seal || (p.lang==='en'?'♪':'詩');
+  var txt = document.createElement('div'); txt.className='eggs-poem-text'+(p.vertical?' v':'');
+  txt.textContent = p.text;
+  var src = document.createElement('div'); src.className='eggs-poem-src'; src.textContent = p.src;
+  card.appendChild(seal); card.appendChild(txt); card.appendChild(src);
+  return card;
+}
+/* ① 竖排：全部 JA + ZH */
+var gv = document.getElementById('grid-vertical');
+POEMS.filter(function(p){ return p.vertical; }).forEach(function(p, i){
+  gv.appendChild(makeCard(p, p.family[i % p.family.length]));
+});
+/* ② 横排：英文 + 一个非诗标签卡 */
+var gh = document.getElementById('grid-horizontal');
+gh.appendChild(makeCard(POEMS.filter(function(p){return p.id==='oshaughnessy';})[0]));
+var plain = document.createElement('div');
+plain.className='eggs-card card-plain';
+plain.innerHTML = '<div class="eggs-poem-text">the world is already here</div><div class="eggs-poem-src"></div>';
+gh.appendChild(plain);
+
+/* ④ 星露谷棕鸡：直接复用真实动画 gif（webapi/static/eggs/stardew_chick.gif，取自 Stardew Valley wiki 的 Brown Chicken.gif），不再用 CSS 像素图。 */
+
+/* ⑤ Hello 触发（演示：直接触发 + 模拟「高级折叠展开」1% 掷骰） */
+var helloEl = document.getElementById('eggs-hello');
+function _previewDrawHello(){
+  var svg = helloEl.querySelector('svg.hw-svg');
+  if(svg){ svg.classList.remove('draw'); void svg.getBoundingClientRect(); svg.classList.add('draw'); }
+}
+document.getElementById('demo-hello-btn').addEventListener('click', function(){
+  helloEl.classList.add('show'); _previewDrawHello();
+});
+document.getElementById('demo-adv-btn').addEventListener('click', function(){
+  // 与真机 ui-eggs.js 的 HELLO_P = 0.01 一致：模拟一次「高级折叠展开」掷骰
+  if (Math.random() < 0.01) { helloEl.classList.add('show'); _previewDrawHello(); }
+});
+helloEl.addEventListener('click', function(){ helloEl.classList.remove('show'); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape' && helloEl.classList.contains('show')) helloEl.classList.remove('show'); });
+/* demo 开关视觉联动（仅演示） */
+document.getElementById('demo-switch').addEventListener('click', function(){
+  this.classList.toggle('on');
+  helloEl.classList.toggle('show', this.classList.contains('on'));
+  if(this.classList.contains('on')) _previewDrawHello();
+});
+/* ④ 鸡点击 → 蔡徐坤「你干嘛哎哟」语音（资源需自备 webapi/static/eggs/aiyo.mp3） */
+document.getElementById('eggs-chick').addEventListener('click', function(){
+  try {
+    var a = new Audio('/eggs/aiyo.mp3');
+    a.play().catch(function(){ alert('（真机）鸡彩蛋语音：请把蔡徐坤「你干嘛哎哟」音频放到 webapi/static/eggs/aiyo.mp3'); });
+  } catch (_) { alert('（真机）鸡彩蛋语音需 webapi/static/eggs/aiyo.mp3'); }
+});
+</script>
+</body>
+</html>

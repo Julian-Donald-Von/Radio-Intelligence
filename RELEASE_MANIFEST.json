@@ -1,0 +1,78 @@
+{
+  "built_at": "2026-11-19 11:32:58",
+  "source": "D:\\MusicAI",
+  "target": "D:\\radio intelligence backup\\MusicAI-Release-20261119",
+  "full_dirs": [
+    "ai",
+    "config",
+    "core",
+    "data",
+    "webapi",
+    "ui",
+    "newui",
+    "utils",
+    "voices",
+    "prompts_export",
+    "setup",
+    "plugins",
+    "models",
+    "venv"
+  ],
+  "root_files": [
+    "start_api_host.py",
+    "start_app.py",
+    "start_webui.py",
+    "main.py",
+    "requirements.txt",
+    ".gitignore",
+    "start_radio.bat",
+    "start_radio_logged.bat",
+    "start_api_host.bat",
+    "start_ui.cmd",
+    "start_webui.bat",
+    "start.bat",
+    "start_api.bat",
+    "stop_radio.bat",
+    "README.md",
+    "README_zh.md",
+    "README_GITHUB.md",
+    "_Modelfile_fullgpu"
+  ],
+  "tools_subpaths": [
+    "llamacpp-b10955",
+    "ffmpeg",
+    "qq-music-api"
+  ],
+  "static_live_files": [
+    "ui-water.js",
+    "water-config.js",
+    "ui-art-bus.js",
+    "ui-art-gate.js",
+    "ui-art-host.js",
+    "liquid.js",
+    "liquid_glass.js",
+    "poster.js"
+  ],
+  "static_live_dirs": [
+    "art-plugins"
+  ],
+  "runtime_files": [
+    "config.json",
+    "musicai.db",
+    "semantic_anchors.npz",
+    "semantic_quantiles.npz",
+    "yamnet_map.npz"
+  ],
+  "runtime_dirs": [
+    "kb",
+    "covers",
+    "models",
+    "tts_cache",
+    "tts_tmp",
+    "tts_presets",
+    "tts_static",
+    "tts_broadcast",
+    "voicebank_20261118"
+  ],
+  "llm": "D:\\.ollama\\blobs\\sha256-d372de8e934898a59e6ccfabc3368474711384d8f1fd4d22d87a3f0a45400cdc"
+}

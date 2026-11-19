@@ -1,0 +1,31 @@
+# ============================================================
+# AI 智能电台音乐软件 — 依赖清单
+# 安装目标：D 盘虚拟环境（见 setup/install.ps1）
+# 分组：核心 / GUI / AI脑 / 音频特征(重)
+# ============================================================
+
+# ---- 核心播放与元数据 ----
+pygame>=2.5.2          # 双通道混音 + 音量Ducking
+mutagen>=1.47.0        # 音频元数据读取(歌手/专辑/封面)
+edge-tts>=1.1.10       # 微软在线TTS(默认 zh-CN-XiaoxiaoNeural)
+
+# ---- GUI ----
+PySide6>=6.7.0         # 主界面
+
+# ---- AI 大脑 / 推荐 ----
+openai>=1.30.0         # 兼容 OpenAI 协议的 LLM API 调用(可接任意兼容端点)
+requests>=2.31.0       # 天气/地点等 HTTP 查询
+pydantic>=2.7.0        # 配置与数据结构校验
+NetEase-MusicBox==0.5.2 # 网易云搜索 / 播放直链（Windows 使用其 Python API）
+
+# ---- 音频特征(较重，可后装) ----
+# 说明：CLAP + FAISS 用于"漫游模式"的音频语义向量检索。
+# faiss-cpu 是"相似漫游"的检索后端，**必装**：已安装时 FeatureIndex.query()
+# 全程走 FAISS（IndexFlatIP.search），不再回退 numpy 暴力检索
+# （见 core/audio_features.py::FeatureIndex）。本机 Python 3.13 用清华镜像
+# 安装 faiss_cpu-1.15.0-cp313 wheel。
+# torch / laion-clap 体积大、需联网，仍可后装；未装时特征自动降级为
+# 基于元数据(流派/节奏/年代)的同维向量，核心功能不受影响。
+faiss-cpu>=1.8.0
+# torch>=2.2.0
+# laion-clap>=1.1.2
