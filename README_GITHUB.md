@@ -148,8 +148,8 @@ The system reads the emotional character of each track from its audio — **on-d
 - **在广播窗口内出结果**：段级推理只给流水线增加毫秒级开销，可见延迟由语音合成与本地 LLM 主导。/ It answers inside the broadcast window.
 - **与一切共存**：整条识别路径跑在 8 GB 上常驻 LLM 之外的剩余显存里。/ It fits in the memory left beside a resident LLM on an 8 GB card.
 
-其研究纲领瞄准一个明确的最前沿轴心：**可部署预算下的识别质量**——在真正能跑在 8 GB 消费卡、与 live LLM 共存的模型里做到最好。具体数字不在此复现；模型、训练协议、标签来源与分数均不在本仓库范围。
-The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. Reported numbers are not reproduced here; the model, protocol, labels and scores are outside this repository's scope.
+其研究纲领瞄准一个明确的最前沿轴心：**可部署预算下的识别质量**——在真正能跑在 8 GB 消费卡、与 live LLM 共存的模型里做到最好。本仓库不含评测数字；模型、训练协议、标签来源与分数均不在本仓库范围。
+The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. This repository does not include evaluation numbers; the model, protocol, labels and scores are outside its scope.
 
 ---
 
@@ -166,8 +166,8 @@ When you compare two frozen representations, how much of the "winner" is the rep
 **我们据此约束自己**：永远不要在单一系数、单一求解器上选表征或宣称更优；要报告全貌，至少报告范围。
 **The takeaway:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.
 
-此处仅描述问题与发现的形状，不提供标识或数字。
-Only the problem and the shape of the finding are described here — no identifiers or numbers.
+这是一条关于评估实践的工程观察，不依赖任何特定模型或数据集。
+This is an engineering observation about evaluation practice; it does not depend on any particular model or dataset.
 
 ---
 
@@ -193,7 +193,7 @@ Only the problem and the shape of the finding are described here — no identifi
 ## 仓库范围 / Repository scope
 
 - **本仓库 / In this repo**：本 README、截图、三段录屏、海报。/ This README, screenshots, three recordings, the poster.
-- **可见但权利保留 / Visible, rights-reserved**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不公开**：内部研究细节。/ Source (readable, no redistribution/commercial licence); visual model; emotion model & protocol. **Not published**: internal research details.
+- **可见但权利保留 / Visible, rights-reserved**：源码树（可阅读，不授权再分发或商用）；视觉层渲染模型与参数化；情绪识别模型与训练协议。**不包含**：内部研究细节。/ Source (readable, no redistribution/commercial licence); visual model; emotion model & protocol. **Not included here**: internal research details.
 - 录屏展示的是应用在开发机上的实际运行。/ Recordings show the app as it actually ran on the developer's machine.
 
 ---

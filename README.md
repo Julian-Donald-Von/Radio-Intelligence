@@ -140,7 +140,7 @@ The system reads the emotional character of each track from its audio — **on-d
 - **It answers inside the broadcast window** — per-segment inference adds milliseconds; visible latency is dominated by synthesis and the local LLM.
 - **It fits next to everything else** — the whole path runs in the memory left beside a resident LLM on an 8 GB card.
 
-The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. Reported numbers are not reproduced here; the model, training protocol, label sources and scores are outside this repository's scope.
+The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. This repository does not include evaluation numbers; the model, training protocol, label sources and scores are outside its scope.
 
 ---
 
@@ -155,7 +155,7 @@ When you compare two frozen representations, how much of the "winner" is the rep
 
 **The takeaway we apply to ourselves:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.
 
-Only the problem and the shape of the finding are described here — no identifiers or numbers.
+This is an engineering observation about evaluation practice; it does not depend on any particular model or dataset.
 
 ---
 
@@ -181,7 +181,7 @@ Only the problem and the shape of the finding are described here — no identifi
 ## Repository scope
 
 - **In this repository:** this README, screenshots, three recordings and the poster.
-- **Visible but rights-reserved:** the source tree (readable, not licensed for redistribution or commercial use); the visual layer's rendering model and parameterization; the emotion-recognition model and training protocol. **Not published:** internal research details.
+- **Visible but rights-reserved:** the source tree (readable, not licensed for redistribution or commercial use); the visual layer's rendering model and parameterization; the emotion-recognition model and training protocol. **Not included here:** internal research details.
 - Recordings show the application as it actually ran on the developer's machine.
 
 ---
