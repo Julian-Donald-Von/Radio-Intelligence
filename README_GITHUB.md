@@ -161,7 +161,7 @@ When you compare two frozen representations, how much of the "winner" is the rep
 - **一个数字藏住一条曲线**：只报告单个正则系数下的差距等于报告路径上的一个点；挪开该点，headline 效应显著缩水。/ A single number hides a curve.
 - **"各臂最优"与"两臂同参"是两个问题**：让每个表征自选系数并不是更宽松版的共享系数比较，符号都不一定确定。/ "Best for each arm" and "the same for both arms" are different questions.
 - **求解器也是实验的一部分**：仅更换数值求解器，就让可接受配置从网格的不到一半变成全部。/ The solver is part of the experiment.
-- **这非音乐独有**：NLP/视觉抽检出现同样结构，因此独立成文。/ None of this is specific to music.
+- **这非音乐独有**：NLP/视觉抽检出现同样结构。/ None of this is specific to music.
 
 **我们据此约束自己**：永远不要在单一系数、单一求解器上选表征或宣称更优；要报告全貌，至少报告范围。
 **The takeaway:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.

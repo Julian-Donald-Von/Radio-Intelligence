@@ -11,7 +11,7 @@
 - `venv/` — 安装时创建；`start_radio.bat` 为入口
 
 ## 已排除
-- 全部 `verify_*` / `probe_*` / `_*` 研究脚本、测试、训练、论文、数据集
+- 全部 `verify_*` / `probe_*` / `_*` 研究脚本、测试、训练、数据集
 - legacy UI（`webapi/static/index.html*`）——仅保留新 UI 需要的 live 资源
 - 本地歌曲文件（位于本机 `D:\Music` / `D:\CloudMusic`，不随包分发）
 
