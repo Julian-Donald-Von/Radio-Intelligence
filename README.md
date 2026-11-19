@@ -1,53 +1,92 @@
-# Radio Intelligence
+<div align="center">
 
-**A local-first AI radio station.** It turns a personal music library into a continuous broadcast: it programs the music, writes and speaks its own DJ segments in multiple languages, and — quietly, in the background — reads how the music *feels*.
+<img src="docs/demo/radio-intelligence-poster.png" alt="Radio Intelligence" width="300"/>
 
-Everything runs on one consumer machine (the reference deployment is a laptop with an RTX 4060, 8 GB): an on-device LLM plays the DJ, an on-device speech stack does the talking, and a music-understanding stack works directly from audio. No cloud account, no API key, and no subscription are required for the core loop.
+# Radio Intelligence · MusicAI
 
-<p align="center">
-  <img src="assets/shot-lyrics.jpg" width="880" alt="Broadcast view: DJ speech bubble, trilingual lyrics, glass dock">
-</p>
+**会读懂心情的本地智能电台 / A local-first AI radio that reads how the music feels.**
 
-> **This repository is a showcase, not the source distribution.** It hosts the project overview, screenshots and two screen recordings. The source tree, the visual layer's implementation, and the emotion-recognition training protocol are not published. See [Repository scope](#repository-scope).
+[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-orange.svg)](https://www.microsoft.com/windows)
+
+</div>
+
+> **展示仓库，非源码发行版。** 本仓库收录项目概览、截图与录屏；源码树、视觉层实现与情绪识别训练协议不公开。详见 [仓库范围](#仓库范围--repository-scope)。
+> **This is a showcase, not the source distribution.** It hosts the overview, screenshots and screen recordings. The source tree, the visual layer's implementation and the emotion-recognition training protocol are not published. See [Repository scope](#仓库范围--repository-scope).
 
 ---
 
-## Demo
+## 演示 / Demo
 
-Real-time screen recordings of the running application (2560×1440 @ 60 fps, no cuts, no edits):
+真实运行录屏，2560×1440 @ 60 fps。点开文件页即可用 GitHub 内置播放器观看。
+Real-time screen recordings, 2560×1440 @ 60 fps — click through to stream in GitHub's built-in player.
 
-- **[▶ Demo 1 — 1:34, 29 MB](assets/demo-01.mp4)** — a live broadcast session: the liquid-glass interface, cover-derived ambient background, synchronized lyrics with a next-line preview, and an on-device DJ segment delivered over the music (speech bubble, left). Second half: a Japanese track with its story told by the DJ, lyrics in English and Japanese.
+| 视频 / Video | 时长 / Length | 大小 / Size | 内容 / Content |
+|---|---|---|---|
+| [▶ 完整版 Full demo](docs/demo/videos/full-demo-clean.mp4) | 4:52 | 67 MB | 全程演示，已去除录屏标志：情绪可视化、AI 导听、逐句歌词、切歌、纯音乐模式 / Full run, overlay trimmed: mood visuals, AI DJ, synced lyrics, track switching, pure-music mode |
+| [▶ 精华版 Highlights](docs/demo/videos/highlights.mp4) | 0:52 | 12 MB | 四段精华拼接 / Four-song montage |
+| [▶ 短版 Short demo](docs/demo/videos/short-demo.mp4) | 1:21 | 20 MB | 掐头去尾版 / Trimmed clip |
 
-- **[▶ Demo 2 — 2:54, 64 MB](assets/demo-02.mp4)** — continuous broadcasting across very different material: hip-hop, an instrumental film score (handled with a spoken "pure music, please enjoy" notice instead of wrong lyrics), and Chinese pop with synchronized lyrics. The session runs unattended; tracks roll in and out on their own.
+> 视频为**视觉无损重编码**（H.265/x265, CRF 20），画质与原始 60 fps / 2560×1440 几乎无差，音轨保留。
+> Videos are **visually lossless re-encodes** (H.265/x265, CRF 20) — near-identical picture, original 60 fps / 2560×1440 and audio preserved.
 
-Click through to the file page to stream — GitHub shows a built-in player for MP4s in repositories.
-
-## Screenshots
+### 截图 / Screenshots
 
 | | |
 |---|---|
-| <img src="assets/shot-cn-lyrics.jpg" width="420" alt="Chinese lyrics with per-line highlighting"> Chinese lyrics, per-line highlighting | <img src="assets/shot-queue.jpg" width="420" alt="Look-ahead queue cards with like/dislike controls"> Look-ahead queue cards, like/dislike on hover |
-| <img src="assets/shot-eq.jpg" width="420" alt="Sound presets panel over ambient background"> Sound presets over the ambient layer | <img src="assets/shot-lyrics.jpg" width="420" alt="DJ speech bubble and Japanese lyrics"> DJ bubble + Japanese/English lyrics |
+| <img src="docs/demo/screenshots/01-ai-dj-intro.png" width="420" alt="AI DJ intro"> AI 导听开场 / AI DJ intro | <img src="docs/demo/screenshots/03-custom-palette.png" width="420" alt="Mood visualization & palette"> 情绪可视化与调色 / Mood visuals & palette |
+| <img src="docs/demo/screenshots/02-lyrics-and-queue.png" width="420" alt="Lyrics and queue"> 逐句歌词与队列 / Lyrics & queue | <img src="docs/demo/screenshots/04-track-switch.png" width="420" alt="Track switching"> 切歌 / Track switching |
+| <img src="docs/demo/screenshots/06-composer-card.png" width="420" alt="Composer card"> 作曲信息卡 / Composer card | <img src="docs/demo/screenshots/08-pure-music.png" width="420" alt="Pure music mode"> 纯音乐模式 / Pure-music mode |
 
 ---
 
-## How a broadcast works
+## 三大亮点 / Highlights
 
-1. **Queue, not playlist.** The controller keeps a short look-ahead queue (current track + next four) and refills it as tracks roll off. Filling is driven by the recommendation engine in either *continuous* mode (stay near the current sound) or *leap* mode (deliberately jump style).
-2. **Narration is prepared before it is needed.** As soon as a track enters the queue, its DJ segment is generated: retrieval (if online) → LLM writing → speech synthesis. By the time the song starts, the audio is already on disk, which is what keeps transitions quiet instead of frantic.
-3. **Ducking with honest timing.** The music bed dips when speech starts and is restored only after the narration has *actually finished* — the fade is tied to end-of-playback, not to the non-blocking call that queued it.
-4. **Transitions are decided, not fixed.** The controller picks intro / outro / none per transition, and dislikes feed back into what gets queued next.
-5. **State goes out over WebSocket.** Every state change is pushed to the UI; the frontend holds no business logic of its own.
+### 1. 音乐情绪可视化 / Music Emotion Visualization
+音乐在液态玻璃上起伏，颜色随心情流动。WebGL2 水体、全局折射与透镜式液态玻璃层实时响应音频频谱与节拍。
+Music rises and falls on liquid glass; color flows with the mood. A WebGL2 water body, global refraction and a lens-like glass layer react to the audio spectrum and beat in real time.
 
-## System architecture
+### 2. AI 导听 / AI DJ Commentary
+大模型 DJ 在耳边低语——歌曲介绍、天气地点、作曲信息、推荐理由。口播时音乐压低至约 15%，结束后渐强恢复。
+An LLM DJ whispers track intros, weather and location, composer notes and recommendation reasons. Music ducks to ~15% during speech and swells back afterwards.
+
+### 3. 高度自定义 / Deep Customization
+音源、AI、口播、外观全部可调。可插拔音源、OpenAI 兼容端点、可选 TTS 音色与可视化配色面板。
+Sources, AI, voice and appearance are all yours to tune — pluggable sources, an OpenAI-compatible endpoint, selectable TTS voices and a palette panel.
+
+**设计哲学 · 液态静默 / Design philosophy — Liquid Silence**：一张被声音扰动的水面，涟漪、波前与折射光都从水中生长，中央是一枚呼吸的核。界面本身就是一件随心情起伏的液态玻璃乐器。
+*One surface: a still body of water disturbed by sound; ripples, wavefronts and refracted light grow out of the water; a breathing core sits at the center. The interface is itself a mood-driven liquid-glass instrument.*
+
+---
+
+## 简介 / Overview
+
+**中文** — Radio Intelligence（MusicAI）是一个本地运行的 AI 智能电台：它把个人曲库变成连续广播——自动编排音乐、用多种语言撰写并播报自己的 DJ 段落，并在后台读取音乐的情绪。核心闭环全部在一台消费级机器上完成（参考部署：RTX 4060 笔记本，8 GB）——本地 LLM 担任 DJ，本地语音栈负责发声，音乐理解直接从音频工作。无需云账号、API key 或订阅。
+
+**EN** — Radio Intelligence (MusicAI) is a local-first AI radio. It turns a personal library into a continuous broadcast: it programs the music, writes and speaks its own DJ segments in multiple languages, and — quietly, in the background — reads how the music *feels*. Everything runs on one consumer machine (reference: an RTX 4060 laptop, 8 GB): an on-device LLM plays the DJ, an on-device speech stack does the talking, and music understanding works directly from audio. No cloud account, API key or subscription for the core loop.
+
+---
+
+## 一次广播如何运作 / How a broadcast works
+
+1. **队列而非歌单 / Queue, not playlist.** 控制器维持一个短前瞻队列（当前+后四首），随播放滚动补充；填充由推荐引擎驱动，分 `continuous`（贴近当前声音）与 `leap`（刻意跳跃风格）两档。/ A short look-ahead queue (current + next four) refills as tracks roll off, driven by *continuous* (stay near) or *leap* (jump style) recommendation.
+2. **旁白提前备好 / Narration prepared ahead.** 歌曲一入队即生成 DJ 段落（检索→LLM 写作→语音合成）；歌开始时音频已落盘，转场因此从容。/ As soon as a track enters the queue its DJ segment is generated; by song start the audio is already on disk, keeping transitions calm.
+3. **诚实的闪避 / Ducking with honest timing.** 音乐在人声开始时压低，仅在旁白**真正播完后**恢复——淡入绑定播放结束事件。/ Music dips when speech starts and returns only after narration has actually finished — the fade is tied to end-of-playback.
+4. **转场是决策不是固定 / Transitions decided, not fixed.** 控制器每次选择 intro / outro / none；dislike 反馈进下一轮排队。/ The controller picks intro/outro/none per transition; dislikes feed back into what gets queued.
+5. **状态走 WebSocket / State over WebSocket.** 每次状态变化由服务端推送到 UI；前端不含业务逻辑。/ Every state change is pushed to the UI; the frontend holds no business logic.
+
+---
+
+## 系统架构 / System architecture
 
 ```mermaid
 flowchart LR
-    subgraph FE["Frontend - no framework, no build step"]
+    subgraph FE["Frontend — no framework, no build step"]
         A["HTML/CSS + JS modules"]
         B["WebGL / WebGL2 layers"]
     end
-    subgraph BE["Backend - FastAPI @ 127.0.0.1:8765"]
+    subgraph BE["Backend — FastAPI @ 127.0.0.1:8765"]
         C["REST + WebSocket"]
         D["Radio bridge / event bus"]
     end
@@ -66,127 +105,128 @@ flowchart LR
     AI --> ST
 ```
 
-The shell is a Qt (PySide6) host that opens the web UI in a QWebEngineView pointed at the local FastAPI server — one process, no browser install, no packaging of a renderer. The controller itself is composed from three mixins (playback orchestration, scheduling, transitions) that share a single state object, so a change made on the playback path is immediately visible to the scheduler.
-
-## Technical features
-
-### Runtime and deployment
-- **One process, local endpoint.** FastAPI + Uvicorn on `127.0.0.1:8765` with REST for commands and WebSocket for state; static files, covers and skin assets served from the same app.
-- **Local LLM by default.** A Qwen-family model served by Ollama; an OpenAI-compatible remote endpoint stays available as an alternative and is selected by configuration, not by code path. A global lock serializes generation, and prompts are structured to hit the KV cache.
-- **Measured, on the developer machine:** one narration segment ≈ 5 s end-to-end after prompt and batch tuning, down from ≈ 23 s — the win came from batching prefill, not from shortening the prompt.
-- **VRAM is budgeted, not hoped for.** With an 8 GB card, the LLM keeps residency while TTS and the embedding worker take fixed fractions, and embedding inference is throttled so it never starves the resident model. No CUDA device → everything falls back to CPU.
-
-### Speech
-- **Language tags drive routing.** The LLM emits narration with inline `<lang>` tags; a segmenter splits the text, normalizes language codes, and routes each fragment to its engine — MeloTTS (local, GPU) for most languages, VOICEVOX (local headless) for Japanese, cloud Edge-TTS as fallback.
-- **Local speech is fast enough to be invisible:** ≈ 0.07× real time on GPU — a minute of speech in roughly four seconds — so synthesis is never the reason a transition feels late.
-- **Failure is graceful.** If an engine is missing or a call fails, the router falls through to the next one; if all fail, the narration is shown as text instead of blocking playback.
-
-### Music understanding and retrieval
-- **Embeddings from audio, not tags.** LAION-CLAP, 512-d, 10 s windows with a 5 s hop, computed in an **isolated worker process** so CUDA allocations never stall the host process. Vectors are stored half-precision in SQLite and indexed in FAISS (`IndexFlatIP` on normalized vectors, so inner product is cosine).
-- **Retrieval fan-out, ordered by cost.** Bing RSS → DuckDuckGo → MusicBrainz → a local `sqlite-vec` corpus, with page fetching and a 30-day cache. A curation gate drops definition pages and boilerplate before anything reaches the prompt — on the test set the definition-page rate fell from 28% to 17% after the gate.
-- **Two recommendation modes** over the same index: *continuous* (similarity) and *leap* (deliberate style jump).
-
-### Frontend
-- **No framework, no build step.** Hand-written HTML/CSS/JS split into ~10 modules; the UI was progressively carved out of a single large script, which is why the layers are unusually separable.
-- **Two rendering mechanisms.** A WebGL shader for the full-screen ambient refraction field, and per-element glass built from SDF displacement maps driven through `backdrop-filter`, with plain blur as fallback.
-- **Lyrics** are LRC-parsed with per-line highlighting and a next-line preview; instrumentals are detected and announced rather than forcing empty lyrics.
-
-### Verification and engineering practice
-- **~170 end-to-end verification scripts** (`verify_*.py`) serve as per-round acceptance gates; one of them acts as the project-wide regression baseline. They run against the real server and a real browser client rather than asserting on source text.
-- **Work is organized in numbered rounds** with archived daily logs — the reason the iteration table below can be written down at all.
+外壳是 Qt (PySide6) 宿主，用 QWebEngineView 指向本地 FastAPI 服务打开 Web UI——单进程，无需安装浏览器。控制器由三个共享同一状态对象的 mixin 组成（播放编排、调度、转场）。
+The shell is a Qt (PySide6) host opening the web UI in a QWebEngineView at the local FastAPI server — one process, no browser install. The controller is composed of three mixins sharing one state object (playback orchestration, scheduling, transitions).
 
 ---
 
-## Emotion recognition — what it does, and how it behaves
+## 技术特性 / Technical features
 
-The system reads an emotional trajectory from the audio it plays: not one label per track, but a moving read-out that follows the music over time. It runs **on-device**, at **segment level**, and **offline** — no network and no cloud call are involved.
+### 运行与部署 / Runtime & deployment
+- 单进程本地端点：FastAPI + Uvicorn @ `127.0.0.1:8765`，REST 下命令、WebSocket 推状态。/ One process, local endpoint: REST for commands, WebSocket for state.
+- 默认本地 LLM：Ollama 承载 Qwen 系列；OpenAI 兼容端点作为可配置备选。全局锁串行化生成，提示词结构化以命中 KV cache。/ Local LLM by default (Ollama/Qwen); OpenAI-compatible endpoint as config-selected alternative.
+- 实测：调优后单段旁白端到端 ≈ 5 s（原 ≈ 23 s），收益来自 batching prefill。/ Measured: one narration ≈ 5 s end-to-end (from ≈ 23 s), the win came from batching prefill.
+- 显存是预算出来的：8 GB 卡上 LLM 常驻，TTS 与 embedding worker 占固定份额；无 CUDA 则全部回落 CPU。/ VRAM is budgeted: on 8 GB the LLM stays resident while TTS and the embedding worker take fixed fractions; no CUDA → CPU fallback.
 
-What that looks like in practice (all of it observable in the recordings above):
+### 语音 / Speech
+- 语言标签驱动路由：LLM 输出带 `<lang>` 标签，分段器归一化后分派到 MeloTTS（本地/GPU）、VOICEVOX（日语）、Edge-TTS（云兜底）。/ Inline `<lang>` tags drive routing to MeloTTS (local GPU), VOICEVOX (Japanese) and cloud Edge-TTS fallback.
+- 本地语音 ≈ 0.07× 实时（一分钟语音约 4 秒合成）。/ Local speech ≈ 0.07× real time — synthesis is never the reason a transition feels late.
+- 失败优雅：引擎缺失或调用失败则顺延；全失败则以文字显示旁白，不阻塞播放。/ Failure falls through; if all fail, narration is shown as text rather than blocking playback.
 
-- **It follows the song, not the file.** The read-out moves with the music as it plays, so a track that turns halfway through is read as turning, not averaged into a single mood.
-- **It survives a style change.** The same read-out is used across Chinese pop, Japanese rock, English hip-hop and instrumental film score without switching modes; the instrumental case is handled explicitly rather than producing a confident but empty answer.
-- **It stays stable across a switch.** When one track replaces another, the reading settles into the new song instead of snapping — which is the visible difference between "a mood engine" and "a mood detector".
-- **It answers inside the broadcast window.** Per-segment inference adds milliseconds to a pipeline whose visible latency is dominated by speech synthesis (≈ 0.07× real time) and the local LLM (≈ 5 s per segment), so the reading is available while the transition is still happening.
-- **It fits next to everything else.** The whole recognition path runs in the memory left over beside a resident LLM on an 8 GB consumer GPU — the deployment budget is part of the specification, not an afterthought.
+### 音乐理解与检索 / Music understanding & retrieval
+- 从音频而非标签取 embedding：LAION-CLAP 512 维、10 s 窗 / 5 s hop，在**独立 worker 进程**计算；向量半精度存 SQLite，FAISS `IndexFlatIP` 建索引。/ 512-d LAION-CLAP from audio in an isolated worker; half-precision vectors in SQLite, indexed with FAISS `IndexFlatIP`.
+- 检索扇出按成本排序：Bing RSS → DuckDuckGo → MusicBrainz → 本地 `sqlite-vec` 语料，带 30 天缓存；策划闸剔除定义页与样板文字（测试集定义页率 28%→17%）。/ Retrieval fan-out ordered by cost with a curation gate (definition-page rate 28%→17% on the test set).
 
-The research program behind it targets a specific axis of state of the art: **recognition quality under a deployability budget** — good enough to be state of the art *among models that can actually ship* on an 8 GB consumer GPU next to a live LLM, rather than accuracy at any cost on a cluster. For that reason the reported numbers are not reproduced here; they belong to the associated publications.
+### 前端 / Frontend
+- 无框架、无构建步骤：手写 HTML/CSS/JS 拆成约 10 个模块。/ No framework, no build step: hand-written HTML/CSS/JS in ~10 modules.
+- 两套渲染机制：WebGL shader 做全屏环境折射场，逐元素玻璃用 `backdrop-filter` 驱动的 SDF 位移贴图，普通模糊兜底。/ A WebGL shader for the ambient field, per-element glass via SDF displacement maps through `backdrop-filter`, plain blur as fallback.
+- 歌词 LRC 解析、逐行高亮、下一行预览；纯音乐被识别后播报而非强塞空歌词。/ LRC lyrics with per-line highlight and next-line preview; instrumentals are announced, not forced into empty lyrics.
 
-**How it is built is deliberately not described here** — the model, its training protocol, its label sources, and its measured scores are outside the scope of this repository.
-
----
-
-## Research: an evaluation-protocol problem worth fixing
-
-This project forced a question that turned out to be more interesting than the answer: **when you compare two frozen representations for a task like this, how much of the "winner" is the representation, and how much is the protocol you measured it with?**
-
-The short version of what we found:
-
-- **A single number hides a curve.** Reporting the gap between two representations at one regularization setting is reporting one point of a path. Move off that point — in particular, trim the coefficient grid at where the two arms actually peak — and the headline effect shrinks dramatically. The reported advantage inherits the extent of the grid someone chose.
-- **"Best for each arm" and "the same for both arms" are different questions.** Letting each representation pick its own validation-near-optimal coefficient is not a more generous version of the shared-coefficient comparison; it is a different question, and it can produce comparisons whose sign is not determined at all. Mixing the two is how papers end up disagreeing without anyone being wrong.
-- **The solver is part of the experiment.** In a controlled check — same data, same split, same metric — changing *only* the numerical solver moved the set of admissible configurations from less than half of the sampled grid to all of it. Some of what reads as "representation quality" is "which optimizer converged".
-- **None of this is specific to music.** The same structure shows up in the NLP/vision spot-checks we ran, which is why this was written up as its own piece of work rather than a footnote in a system paper.
-
-**The takeaway we now apply to ourselves:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape, or at least the range.
-
-This work has been written up as a manuscript that is **currently under double-blind review**. To keep that review anonymous, this page deliberately gives **no title, no link, no venue, and no reported numbers** — only the problem and the shape of the finding. The full write-up will be linked here once the review process allows it.
+### 验证 / Verification
+- 约 170 个端到端验证脚本（`verify_*.py`）作为逐轮验收门，其中一个为全项目回归基线；它们打真实服务与真实浏览器客户端。/ ~170 end-to-end verification scripts as per-round gates, one serving as the project-wide regression baseline — run against the real server and a real browser client.
 
 ---
 
-## Iteration history
+## 情绪识别 / Emotion recognition
 
-Development proceeded in numbered rounds, each with per-round acceptance scripts and archived daily logs. The archive starts at R19 (2026-08-30) and currently reaches R120, with finer sub-rounds inside (e.g. R49-22 … R49-31). Stage numbers below (S1–S8) were assigned when assembling this README; the underlying rounds keep their archive names.
+系统从所播音频读取一条情绪轨迹——不是每首一个标签，而是随音乐时间推进的动态读数；**本地、段级、离线**，不联网、不调云。
+The system reads an emotional trajectory from the audio — not one label per track but a moving read-out over time; **on-device, segment-level, offline**.
 
-| # | Archive rounds | Period | Theme |
-|---|---|---|---|
-| S1 | R19–R34 | 2026-08-30 → 09-03 | Player-core stabilization: card UI, playlist flows, cover pipeline, lyrics view, recommendation rebuild |
-| S2 | R44–R49 | 09-05 → 09-07 | Navigation rebuild (orbit navigation + side panels) and the project-wide regression gate |
-| S3 | R50–R69 | 09-07 → 09-08 | Frontend modularization (one giant script → ten modules), settings, wallpaper engine, EQ, drag physics |
-| S4 | R70–R98 | 09-08 → 09-11 | Visual layer & audio semantics: first semantic model, physics layer, calibration chain *(implementation details withheld)* |
-| S5 | R99–R104 | 09-11 | Research bootstrap: emotion recognition becomes a first-class sub-project |
-| S6 | R105–R120 | 09-11 → 09-22 | Research rounds and production hardening *(round details withheld — unpublished work)* |
-| S7 | — ¹ | 09-19 → 09-23 | Real-time hardening: startup stalls, narration latency, retrieval fan-out, TTS/LLM engine selection |
-| S8 | — ¹ | 09-28 → 09-29 | Frozen-representation evaluation study → the write-up under review |
+- **跟歌走，不跟文件走**：歌曲中途转折就被读成转折，而非平均成单一心情。/ It follows the song, not the file.
+- **扛得住风格切换**：中文流行、日文摇滚、英文嘻哈、纯音乐配乐共用一套读数；纯音乐显式处理。/ It survives a style change; instrumentals handled explicitly.
+- **切换时保持稳定**：换歌时读数平滑落到新歌，而非突变。/ It stays stable across a switch.
+- **在广播窗口内出结果**：段级推理只给流水线增加毫秒级开销，可见延迟由语音合成与本地 LLM 主导。/ It answers inside the broadcast window.
+- **与一切共存**：整条识别路径跑在 8 GB 上常驻 LLM 之外的剩余显存里。/ It fits in the memory left beside a resident LLM on an 8 GB card.
 
-¹ Unnumbered in the daily archive; numbered here when this README was assembled.
+其研究纲领瞄准一个明确的最前沿轴心：**可部署预算下的识别质量**——在真正能跑在 8 GB 消费卡、与 live LLM 共存的模型里做到最好。具体数字不在此复现，它们属于配套论文；模型、训练协议、标签来源与分数均不在本仓库范围。
+The research targets **recognition quality under a deployability budget** — SOTA among models that can actually ship on an 8 GB consumer GPU beside a live LLM. Reported numbers are not reproduced here; the model, protocol, labels and scores are outside this repository's scope.
 
-## Why a compact student head
+---
 
-The recognition path deliberately avoids end-to-end fine-tuning of the audio encoder. A small **student head** is fitted on top of a frozen representation instead:
+## 研究：一个值得修正的评估协议问题 / Research: an evaluation-protocol problem
 
-- **Cost.** Fitting a head takes minutes, not a training run — which is what makes exhaustive protocol checks economically possible at all.
-- **Co-existence.** The head shares the frozen encoder with the retrieval path and fits into the VRAM left over next to a resident LLM on the 8 GB card.
-- **Swap-and-compare.** Many heads can be evaluated against one cached embedding store, so evaluation questions can be compared honestly without re-embedding the whole library.
-- **Response speed.** The head is lightweight, so per-segment inference adds milliseconds to a pipeline whose visible latency is dominated by synthesis and generation. Narration still lands inside the transition window.
+比较两份冻结表征时，"赢家"里有多少来自表征本身、多少来自你用来测它的协议？
+When you compare two frozen representations, how much of the "winner" is the representation and how much is the protocol?
 
-## Ongoing & follow-up research
+- **一个数字藏住一条曲线**：只报告单个正则系数下的差距等于报告路径上的一个点；挪开该点，headline 效应显著缩水。/ A single number hides a curve.
+- **"各臂最优"与"两臂同参"是两个问题**：让每个表征自选系数并不是更宽松版的共享系数比较，符号都不一定确定。/ "Best for each arm" and "the same for both arms" are different questions.
+- **求解器也是实验的一部分**：仅更换数值求解器，就让可接受配置从网格的不到一半变成全部。/ The solver is part of the experiment.
+- **这非音乐独有**：NLP/视觉抽检出现同样结构，因此独立成文。/ None of this is specific to music.
 
-- Extending the evaluation-protocol study: more probe families, more solvers, metric-specific oracles.
-- Broadening the recognition program across time scales (a 5 s engineering scale and a 0.5 s research scale) under the same deployability budget.
-- Hardening multi-source ingestion and offline resilience.
+**我们据此约束自己**：永远不要在单一系数、单一求解器上选表征或宣称更优；要报告全貌，至少报告范围。
+**The takeaway:** never select a representation, or claim one is better, on a single coefficient and a single solver. Report the landscape.
 
-## Stack summary
+该工作已成文，**目前处于双盲评审**。为保持匿名，此处**不提供标题、链接、会议与数字**——只有问题与发现的形状。
+Written up as a manuscript **under double-blind review**; to keep it anonymous, no title/link/venue/numbers here — only the problem and the shape of the finding.
 
-| Layer | Choice |
+---
+
+## 技术栈 / Stack
+
+| 层 / Layer | 选择 / Choice |
 |---|---|
-| App shell | PySide6 (Qt) host + QWebEngineView |
-| Backend | FastAPI + Uvicorn, REST + WebSocket, `127.0.0.1:8765` |
-| Frontend | Hand-written HTML/CSS/JS — no framework, no build step; WebGL/WebGL2 |
-| LLM | Local Ollama (Qwen family); OpenAI-compatible endpoint as alternative |
-| Speech | MeloTTS (local GPU), VOICEVOX (Japanese), Edge TTS (cloud fallback) |
-| Music representation | LAION-CLAP, 512-d, 10 s window / 5 s hop |
-| Vector search | FAISS `IndexFlatIP` (cosine), numpy fallback |
-| Storage | SQLite — tracks, segments, embeddings, playlists, history, preferences |
-| Retrieval | Bing RSS / DuckDuckGo / MusicBrainz / local `sqlite-vec` corpus |
-| Audio engine | pygame mixer, two-channel ducking |
-| Python | 3.11+ (developed and tested on 3.13) |
-| GPU | Designed for an RTX 4060 Laptop 8 GB; runs CPU-only without CUDA |
+| 外壳 / App shell | PySide6 (Qt) + QWebEngineView |
+| 后端 / Backend | FastAPI + Uvicorn, REST + WebSocket, `127.0.0.1:8765` |
+| 前端 / Frontend | 手写 HTML/CSS/JS，无框架无构建；WebGL/WebGL2 |
+| LLM | 本地 Ollama（Qwen 系列）；OpenAI 兼容端点备选 |
+| 语音 / Speech | MeloTTS（本地 GPU）、VOICEVOX（日语）、Edge TTS（云兜底） |
+| 音乐表征 / Representation | LAION-CLAP, 512-d, 10 s 窗 / 5 s hop |
+| 向量检索 / Vector search | FAISS `IndexFlatIP`（余弦），numpy 兜底 |
+| 存储 / Storage | SQLite — tracks, segments, embeddings, playlists, history, preferences |
+| 检索 / Retrieval | Bing RSS / DuckDuckGo / MusicBrainz / 本地 `sqlite-vec` |
+| 音频 / Audio engine | pygame mixer，双通道 ducking |
+| Python | 3.11+（开发测试于 3.13） |
+| GPU | 面向 RTX 4060 Laptop 8 GB；无 CUDA 则纯 CPU |
 
-## Repository scope
+---
 
-- **In this repository:** this README, four screenshots, and two screen recordings. Nothing else.
-- **Not published:** the source tree; the visual layer's rendering model, parameterization and tuning data; the emotion-recognition model, training protocol, label sources and measured scores; the identity of the manuscript under review.
-- The recordings show the application as it ran on 2026-09-19 and 2026-09-21 on the developer's machine.
+## 仓库范围 / Repository scope
 
-## Contact
+- **本仓库 / In this repo**：本 README、截图、三段录屏、海报。/ This README, screenshots, three recordings, the poster.
+- **不公开 / Not published**：源码树；视觉层的渲染模型、参数化与调参数据；情绪识别模型、训练协议、标签来源与分数；在审论文身份。/ Source tree; visual-layer rendering model; emotion model, protocol, labels and scores; manuscript identity.
+- 录屏展示的是应用在开发机上的实际运行。/ Recordings show the app as it actually ran on the developer's machine.
 
-The maintainer keeps this project personal; identity details are withheld here while the associated manuscript is under double-blind review. If you need to reach them, open an issue on this repository.
+---
+
+## 授权 / License
+
+<div align="center">
+<a href="https://creativecommons.org/licenses/by-nc-nd/4.0/"><img src="https://licensebuttons.net/l/by-nc-nd/4.0/88x31.png" alt="CC BY-NC-ND 4.0"/></a>
+</div>
+
+**EN** — This project is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/): you may share and view it, with attribution, for **non-commercial** purposes; you may **not** distribute modified versions.
+
+> ⚠️ **Artistic effects — all rights reserved.** The visual/artistic effects — including the liquid water body, global refraction, liquid-glass lens, poster canvas, breathing core, ripple/wavefront rendering, color palettes, the RI logo and all generated visual assets — are **excluded from this license**. All rights are fully reserved by the author; no license to use, copy, modify or redistribute them, in whole or in part, is granted.
+
+**中文** — 本项目采用 [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) 协议：署名前提下可出于**非商业**目的分享与浏览；**不得**分发修改版本。
+
+> ⚠️ **艺术效果 · 权利完全保留。** 视觉/艺术效果——水体、全局折射、液态玻璃透镜、海报画布、呼吸核、涟漪/波前渲染、配色、RI 标志及全部生成视觉资产——**不在上述协议授权范围内**，全部权利由作者完全保留，不授予任何使用、复制、修改或再分发许可。
+
+---
+
+## 请我喝一杯 / Buy me a drink
+
+**EN** — If Radio Intelligence made your listening a little better, you can buy me a drink. Thank you. ☕
+
+**中文** — 如果 Radio Intelligence 让你的聆听体验好了一些，欢迎请我喝一杯。谢谢。☕
+
+| 方式 / Method | 信息 / Details |
+|---|---|
+| 银行转账 / Bank transfer | 香港上海汇丰银行 / The Hongkong and Shanghai Banking Corporation (HSBC) · 账户 / Account `090 571969 833` |
+| 转数快 / FPS (Faster Payment System) | ID `130236169` |
+
+---
+
+<div align="center">
+<i>Built with care. 用心之作。</i>
+</div>
